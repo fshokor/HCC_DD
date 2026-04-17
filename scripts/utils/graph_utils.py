@@ -16,7 +16,7 @@ import numpy as np
 import pandas as pd
 import networkx as nx
 import torch
-from torch_geometric.data import Data
+# from torch_geometric.data import Data
 from sklearn.preprocessing import StandardScaler
 
 
