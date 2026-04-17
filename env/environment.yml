@@ -1,0 +1,92 @@
+name: hcc_drug_discovery
+
+# =============================================================================
+# Channel priority (top = highest priority)
+# conda-forge is used for most packages — it has more up-to-date builds
+# than defaults and better cross-platform compatibility.
+# pytorch channel is required for the official PyTorch CPU/GPU builds.
+# =============================================================================
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+
+dependencies:
+
+  # ── Python ─────────────────────────────────────────────────────────────────
+  - python=3.12
+
+  # ── PyTorch ────────────────────────────────────────────────────────────────
+  # CPU-only build — works on any machine, sufficient for this project.
+  # For GPU support see env/environment_gpu.yml
+  - pytorch::pytorch>=2.2,<2.6
+  - pytorch::cpuonly
+
+  # ── Core scientific stack ───────────────────────────────────────────────────
+  # numpy <2.0 required by scanpy 1.10
+  - conda-forge::numpy>=1.26,<2.0
+  - conda-forge::pandas>=2.1
+  - conda-forge::scipy>=1.11
+  - conda-forge::matplotlib>=3.8
+  - conda-forge::seaborn>=0.13
+
+  # ── Single-cell RNA-seq ─────────────────────────────────────────────────────
+  # scanpy pulls anndata automatically; leidenalg + python-igraph
+  # are required for the Leiden clustering algorithm used in notebook 02.
+  - conda-forge::scanpy>=1.10
+  - conda-forge::anndata>=0.10
+  - conda-forge::leidenalg>=0.10
+  - conda-forge::python-igraph>=0.11
+
+  # ── R interface (for annotation notebooks 03) ───────────────────────────────
+  # rpy2 bridges Python and R. R itself must be installed separately:
+  #   macOS/Linux: conda install -c conda-forge r-base=4.4
+  #   Windows:     download from https://cran.r-project.org/
+  # R packages (Seurat, SingleR, celldex, ScType) are installed via:
+  #   Rscript env/r_packages.R
+  - conda-forge::rpy2>=3.5
+
+  # ── Network & graph ─────────────────────────────────────────────────────────
+  - conda-forge::networkx>=3.2
+
+  # ── HTTP / API clients ──────────────────────────────────────────────────────
+  - conda-forge::requests>=2.31
+
+  # ── Machine learning ────────────────────────────────────────────────────────
+  - conda-forge::scikit-learn>=1.4
+
+  # ── Survival analysis ───────────────────────────────────────────────────────
+  - conda-forge::lifelines>=0.28
+
+  # ── Jupyter environment ─────────────────────────────────────────────────────
+  - conda-forge::jupyterlab>=4.0
+  - conda-forge::notebook>=7.0
+  - conda-forge::ipykernel>=6.29
+  - conda-forge::ipywidgets>=8.1
+  - conda-forge::nbformat>=5.9
+  - conda-forge::nbconvert>=7.0
+
+  # ── pip-only packages ───────────────────────────────────────────────────────
+  # These are not available on conda-forge or require pip for correct
+  # version resolution alongside the conda-installed packages above.
+  - pip
+  - pip:
+      # Cell-type annotation
+      - celltypist>=1.6          # automated cell-type annotation
+
+      # R <-> Python bridge (anndata2ri is pip-only)
+      - anndata2ri>=1.3          # converts AnnData to SingleCellExperiment (R)
+
+      # PyTorch Geometric and required sparse/scatter extensions.
+      # These wheels are compiled against a specific torch version.
+      # setup_env.sh installs them with the correct --find-links URL automatically.
+      # If installing manually:
+      #   TORCH=$(python -c "import torch; print(torch.__version__.split('+')[0])")
+      #   pip install torch-geometric torch-scatter torch-sparse torch-cluster \
+      #       --find-links https://data.pyg.org/whl/torch-${TORCH}+cpu.html
+      - torch-geometric>=2.5
+      - torch-scatter
+      - torch-sparse
+      - torch-cluster
+      - torch-spline-conv
