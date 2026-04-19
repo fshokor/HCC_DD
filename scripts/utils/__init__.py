@@ -3,9 +3,10 @@ utils — shared helpers for the HCC drug discovery pipeline.
 
 Modules
 -------
-graph_utils   — PPI graph construction + GNN graph building
-plot_utils    — all matplotlib figure functions
-api_clients   — DGIdb / ChEMBL / OpenTargets HTTP clients
+graph_utils      — PPI graph construction + GNN graph building
+plot_utils       — all matplotlib figure functions
+api_clients      — DGIdb / ChEMBL / OpenTargets HTTP clients
+report_functions — HTML report generators for notebooks 01–03
 """
 
 from .graph_utils import (
@@ -96,6 +97,11 @@ from .survival_functions import (
     filter_survivors,
     export_survival,
 )
+from .report_functions import (
+    generate_scrna_report,
+    generate_target_report,
+    generate_gnn_report,
+)
 
 __all__ = [
     "build_ppi_graph", "compute_hub_scores", "build_gnn_graph", "edge_tensors",
@@ -113,5 +119,6 @@ __all__ = [
     "build_ppi_graph", "compute_hub_scores", "build_gnn_graph", "edge_tensors",
     "run_wilcoxon", "plot_volcano", "export_dea",
     "safe_request", "query_dgidb", "query_chembl", "query_opentargets",
-    "get_curated_fallback"
+    "get_curated_fallback",
+    "generate_scrna_report", "generate_target_report", "generate_gnn_report",
 ]

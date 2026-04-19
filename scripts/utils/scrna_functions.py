@@ -228,47 +228,76 @@ def run_leiden(adata, resolutions=(0.3, 0.5, 1.0, 2.0)):
 # Notebook 03 — Annotation
 # ─────────────────────────────────────────────────────────────────────────────
 
-def run_celltypist(adata):
+def run_celltypist(adata, mode="both"):
     """
-    Annotate cells using CellTypist Immune_All_High and Immune_All_Low models.
-
-    Adds two columns to adata.obs:
-      - celltypist_coarse  (Immune_All_High, majority voting)
-      - celltypist_fine    (Immune_All_Low,  majority voting)
+    Annotate cells using CellTypist models.
 
     Parameters
     ----------
-    adata : AnnData  (modified in-place, also returned)
+    adata : AnnData
+        Input object. Must have raw counts in adata.layers["counts"].
+    mode : {"high", "low", "both"}
+        Which CellTypist model(s) to run:
+          "high" — Immune_All_High  (coarse, ~30 broad types)
+                   Adds adata.obs["celltypist_coarse"]
+          "low"  — Immune_All_Low   (fine-grained, ~200 subtypes)
+                   Adds adata.obs["celltypist_fine"]
+          "both" — Run both models (default)
+                   Adds both columns above
 
     Returns
     -------
     adata : AnnData
+        Modified in-place, also returned.
     """
     import celltypist
     from celltypist import models
 
+    if mode not in ("high", "low", "both"):
+        raise ValueError(f"mode must be 'high', 'low', or 'both' — got '{mode}'")
+
+    print(f"CellTypist mode: {mode}")
+
+    # ── Prepare normalised dense copy ─────────────────────────────────────────
     adata_ct = adata.copy()
     adata_ct.X = adata_ct.layers["counts"]
     sc.pp.normalize_total(adata_ct, target_sum=1e4)
     sc.pp.log1p(adata_ct)
-    adata_ct.X = adata_ct.X.toarray()
+    if hasattr(adata_ct.X, "toarray"):
+        adata_ct.X = adata_ct.X.toarray()
 
-    models.download_models(force_update=False,
-                           model=["Immune_All_Low.pkl", "Immune_All_High.pkl"])
-    model_high = models.Model.load(model="Immune_All_High.pkl")
-    model_low  = models.Model.load(model="Immune_All_Low.pkl")
+    # ── Download only what we need ────────────────────────────────────────────
+    models_to_download = []
+    if mode in ("high", "both"):
+        models_to_download.append("Immune_All_High.pkl")
+    if mode in ("low", "both"):
+        models_to_download.append("Immune_All_Low.pkl")
 
-    pred_high = celltypist.annotate(adata_ct, model=model_high, majority_voting=True)
-    pred_low  = celltypist.annotate(adata_ct, model=model_low,  majority_voting=True)
+    models.download_models(force_update=False, model=models_to_download)
 
-    ph = pred_high.to_adata()
-    pl = pred_low.to_adata()
+    # ── Run selected model(s) ─────────────────────────────────────────────────
+    if mode in ("high", "both"):
+        model_high = models.Model.load(model="Immune_All_High.pkl")
+        pred_high  = celltypist.annotate(adata_ct, model=model_high,
+                                         majority_voting=True)
+        adata.obs["celltypist_coarse"] = (pred_high.to_adata()
+                                          .obs.loc[adata.obs.index, "majority_voting"])
+        print(f"  coarse types (High model): {adata.obs.celltypist_coarse.nunique()}")
 
-    adata.obs["celltypist_coarse"] = ph.obs.loc[adata.obs.index, "majority_voting"]
-    adata.obs["celltypist_fine"]   = pl.obs.loc[adata.obs.index, "majority_voting"]
+    if mode in ("low", "both"):
+        model_low = models.Model.load(model="Immune_All_Low.pkl")
+        pred_low  = celltypist.annotate(adata_ct, model=model_low,
+                                        majority_voting=True)
+        adata.obs["celltypist_fine"] = (pred_low.to_adata()
+                                        .obs.loc[adata.obs.index, "majority_voting"])
+        print(f"  fine types   (Low model) : {adata.obs.celltypist_fine.nunique()}")
 
-    print(f"CellTypist coarse types: {adata.obs.celltypist_coarse.nunique()}")
-    print(f"CellTypist fine types  : {adata.obs.celltypist_fine.nunique()}")
+    # ── Guarantee both columns always exist (fill absent one with placeholder) -
+    if mode == "high" and "celltypist_fine" not in adata.obs.columns:
+        adata.obs["celltypist_fine"] = "not_run"
+    if mode == "low" and "celltypist_coarse" not in adata.obs.columns:
+        adata.obs["celltypist_coarse"] = "not_run"
+
     return adata
 
 
