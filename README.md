@@ -37,9 +37,6 @@ Raw MTX files (GEO: GSE166635)
  05 · GSEA & pathway networks      gsea_functions.py
         │   clusterProfiler (R) · GO-BP/MF/CC · KEGG
         ▼
- 06 · Macrophage sub-cluster       (original contribution beyond the paper)
-        │   M1 / M2 / Kupffer / TAM module scoring
-        ▼
  P1 · PPI network & hub genes      ppi_functions.py
         │   STRING API · NetworkX · composite centrality score
         ▼
@@ -66,7 +63,6 @@ HCC_DD/
 │   ├── 03_annotation.ipynb             CellTypist + ScType + SingleR + vote
 │   ├── 04_dea.ipynb                    Wilcoxon DEA + volcano plot
 │   ├── 05_gsea.ipynb                   GSEA via clusterProfiler (R)
-│   ├── 06_immune_infiltration.ipynb    Macrophage sub-cluster (original)
 │   ├── P1_ppi_network.ipynb            STRING PPI + hub gene ranking
 │   ├── P2_survival_filter.ipynb        KM + Cox survival analysis
 │   ├── P3_drug_gene_interactions.ipynb DGIdb / ChEMBL / OpenTargets
@@ -74,19 +70,20 @@ HCC_DD/
 │                                       (Colab / GPU compatible)
 │
 ├── scripts/
-│   ├── scrna_functions.py              scRNA-seq utilities (notebooks 01–03)
-│   ├── dea_functions.py                DEA utilities (notebook 04)
-│   ├── gsea_functions.py               GSEA utilities (notebook 05)
-│   ├── ppi_functions.py                PPI utilities (notebook P1)
-│   ├── survival_functions.py           Survival utilities (notebook P2)
-│   ├── dgi_functions.py                DGI utilities (notebook P3)
-│   ├── gnn_functions.py                GNN models + training (notebook P4)
+│  
 │   ├── data_download.py                Downloads GSE166635, writes paths.py
 │   └── utils/
-│       ├── __init__.py
-│       ├── graph_utils.py              PPI + GNN graph construction
-│       ├── plot_utils.py               All matplotlib figure functions
-│       └── api_clients.py              DGIdb / ChEMBL / OpenTargets clients
+│           ├── __init__.py
+            ├── scrna_functions.py              scRNA-seq utilities (notebooks 01–03)
+│           ├── dea_functions.py                DEA utilities (notebook 04)
+│           ├── gsea_functions.py               GSEA utilities (notebook 05)
+│           ├── ppi_functions.py                PPI utilities (notebook P1)
+│           ├── survival_functions.py           Survival utilities (notebook P2)
+│           ├── dgi_functions.py                DGI utilities (notebook P3)
+│           ├── gnn_functions.py                GNN models + training (notebook P4)
+│           ├── graph_utils.py              PPI + GNN graph construction
+│           ├── plot_utils.py               All matplotlib figure functions
+│           └── api_clients.py              DGIdb / ChEMBL / OpenTargets clients
 │
 ├── env/
 │   ├── environment.yml                 Conda environment (CPU)
@@ -282,25 +279,6 @@ from a single source.
 **Google Colab compatibility.** Notebook P4 auto-detects the Colab environment,
 installs the correct PyG wheels for the available CUDA version, and adapts all
 file paths for the Colab session filesystem — no manual setup required.
-
----
-
-## Citation
-
-If you use this code, please cite the original paper:
-
-```bibtex
-@article{wang2025hcc,
-  title   = {Integrating single-cell RNA sequencing and artificial intelligence
-             for multitargeted drug design for combating resistance in liver cancer},
-  author  = {Wang, Houhong and Yang, Youyuan and Zhang, Junfeng and others},
-  journal = {npj Precision Oncology},
-  volume  = {9},
-  pages   = {309},
-  year    = {2025},
-  doi     = {10.1038/s41698-025-00952-3}
-}
-```
 
 ---
 

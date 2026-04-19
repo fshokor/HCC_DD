@@ -146,27 +146,6 @@ immune regulation.
 
 ---
 
-## 06 · Macrophage sub-cluster analysis (`06_immune_infiltration.ipynb`)
-
-*Original contribution beyond Wang et al. (2025).*
-
-Cells annotated as macrophages were subset from `adata_annotated.h5ad` and
-re-clustered (Leiden, resolution=0.4). Module scores were computed with
-`sc.tl.score_genes` for four macrophage phenotypes:
-
-| Phenotype | Key markers |
-|-----------|-------------|
-| M1 (pro-inflammatory) | TNF, IL1B, CXCL9, CD86, STAT1, NOS2, CXCL10 |
-| M2 (anti-inflammatory) | CD163, MRC1, IL10, VEGFA, APOE, ARG1, TGFB1 |
-| Kupffer cells (resident) | VSIG4, TIMD4, C1QA, C1QB, MARCO, CLEC4F, FOLR2 |
-| TAMs (tumor-associated) | SPP1, TREM2, GPNMB, CD9, MMP9, VCAN, SLC40A1 |
-
-Differential expression between normal (HCC1) and tumor (HCC2) macrophages was
-computed by Wilcoxon rank-sum test (padj<0.05, |log2FC|>1). Results exported to
-`results/tables/macrophage_tumor_vs_normal_DE.csv`.
-
----
-
 ## P1 · PPI Network (`P1_ppi_network.ipynb`, `scripts/ppi_functions.py`)
 
 The 1,178 significant DEGs were submitted to the
