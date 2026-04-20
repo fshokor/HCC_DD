@@ -63,13 +63,13 @@ def load_dgi_inputs(tables_dir):
     hub_score_map = (hub_df.set_index("gene")["hub_score"].to_dict()
                      if "hub_score" in hub_df.columns else {})
 
-    surv_file = tables_dir / "survival_filtered_genes.csv"
-    surv_genes = (set(pd.read_csv(surv_file)["gene"].dropna())
-                  if surv_file.exists() else set())
+    # surv_file = tables_dir / "survival_filtered_genes.csv"
+    # surv_genes = (set(pd.read_csv(surv_file)["gene"].dropna())
+    #               if surv_file.exists() else set())
 
     print(f"Hub genes        : {len(gene_list)}")
-    print(f"Survival targets : {len(surv_genes)}")
-    return gene_list, hub_score_map, surv_genes
+    # print(f"Survival targets : {len(surv_genes)}")
+    return gene_list, hub_score_map#, surv_genes
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -179,7 +179,7 @@ DRUG_FEAT_COLS = [
 ]
 
 
-def build_dgi_dataframe(all_edges, hub_score_map, surv_genes, W):
+def build_dgi_dataframe(all_edges, hub_score_map, W):
     """
     Convert raw interaction records into a clean, scored dataframe.
 
@@ -234,8 +234,8 @@ def build_dgi_dataframe(all_edges, hub_score_map, surv_genes, W):
         W["publications"] * norm(dgi_df.n_publications.clip(0, 30)) +
         W["phase"]        * (dgi_df.clinical_phase / 4) +
         W["approved"]     * dgi_df.approved.astype(float) +
-        W["hub"]          * norm(dgi_df.gene.map(hub_score_map).fillna(0)) +
-        dgi_df.gene.isin(surv_genes).astype(float) * 0.10
+        W["hub"]          * norm(dgi_df.gene.map(hub_score_map).fillna(0)) * 0.10
+        # dgi_df.gene.isin(surv_genes).astype(float) 
     ).clip(0, 1).round(4)
 
     dgi_df = dgi_df.sort_values("composite_score", ascending=False).reset_index(drop=True)
@@ -248,7 +248,7 @@ def build_dgi_dataframe(all_edges, hub_score_map, surv_genes, W):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-def build_gnn_edge_list(dgi_df, hub_score_map, surv_genes, tables_dir):
+def build_gnn_edge_list(dgi_df, hub_score_map, tables_dir):
     """
     Add one-hot GNN feature columns and export dgi_edges_gnn.csv.
 
@@ -272,7 +272,7 @@ def build_gnn_edge_list(dgi_df, hub_score_map, surv_genes, tables_dir):
     """
     gnn_df = dgi_df.copy()
     gnn_df["hub_score"]       = gnn_df.gene.map(hub_score_map).fillna(0)
-    gnn_df["survival_target"] = gnn_df.gene.isin(surv_genes).astype(int)
+    # gnn_df["survival_target"] = gnn_df.gene.isin(surv_genes).astype(int)
 
     for src in ["DGIdb", "ChEMBL", "OpenTargets"]:
         gnn_df[f"source_{src}"] = (gnn_df.source == src).astype(int)
@@ -285,7 +285,7 @@ def build_gnn_edge_list(dgi_df, hub_score_map, surv_genes, tables_dir):
         [f"source_{s}" for s in ["DGIdb", "ChEMBL", "OpenTargets"]] +
         [f"type_{t}" for t in ["inhibitor", "agonist", "antagonist",
                                 "antibody", "binder", "activator"]] +
-        ["hub_score", "survival_target", "interaction_type", "directionality", "source"]
+        ["hub_score", "interaction_type", "directionality", "source"]
     )
     gnn_df[[c for c in gnn_cols if c in gnn_df.columns]].to_csv(
         tables_dir / "dgi_edges_gnn.csv", index=False)

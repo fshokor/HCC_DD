@@ -1,0 +1,284 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 860" width="1200" height="860">
+  <defs>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(83,74,183,0.07)" stroke-width="1"/>
+    </pattern>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0c1020"/>
+      <stop offset="100%" stop-color="#080c18"/>
+    </linearGradient>
+    <linearGradient id="arrow1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#534AB7" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#1D9E75" stop-opacity="0.8"/>
+    </linearGradient>
+    <linearGradient id="arrow2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1D9E75" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#D85A30" stop-opacity="0.8"/>
+    </linearGradient>
+    <linearGradient id="nb1fill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="rgba(83,74,183,0.14)"/>
+      <stop offset="100%" stop-color="rgba(83,74,183,0.05)"/>
+    </linearGradient>
+    <linearGradient id="nb2fill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="rgba(29,158,117,0.12)"/>
+      <stop offset="100%" stop-color="rgba(29,158,117,0.04)"/>
+    </linearGradient>
+    <linearGradient id="nb3fill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="rgba(216,90,48,0.12)"/>
+      <stop offset="100%" stop-color="rgba(216,90,48,0.04)"/>
+    </linearGradient>
+    <style>
+      text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; }
+      .mono { font-family: 'SFMono-Regular', 'Consolas', 'Liberation Mono', monospace; }
+    </style>
+    <filter id="glow1">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="860" fill="url(#bg)"/>
+  <rect width="1200" height="860" fill="url(#grid)"/>
+
+  <!-- Header area top bar -->
+  <rect x="0" y="0" width="1200" height="4" fill="#534AB7" opacity="0.9"/>
+
+  <!-- Title block -->
+  <text x="48" y="48" class="mono" font-size="9.5" fill="#534AB7" letter-spacing="3" opacity="0.9">COMPUTATIONAL DRUG DISCOVERY · HEPATOCELLULAR CARCINOMA</text>
+  <text x="48" y="84" font-size="30" font-weight="700" fill="#e8eaf0" letter-spacing="-0.5">HCC Drug Discovery Pipeline</text>
+  <text x="48" y="106" font-size="12" fill="#4a5272">Single-cell RNA sequencing  ·  Graph Neural Networks  ·  Drug Repurposing  ·  GSE166635</text>
+
+  <!-- Badges -->
+  <rect x="48" y="120" width="128" height="20" rx="4" fill="rgba(83,74,183,0.2)" stroke="rgba(83,74,183,0.45)" stroke-width="1"/>
+  <text x="112" y="134" class="mono" font-size="9" fill="#9b93e8" text-anchor="middle">GEO: GSE166635</text>
+
+  <rect x="184" y="120" width="144" height="20" rx="4" fill="rgba(29,158,117,0.18)" stroke="rgba(29,158,117,0.4)" stroke-width="1"/>
+  <text x="256" y="134" class="mono" font-size="9" fill="#65d4a8" text-anchor="middle">Wang et al., npj 2025</text>
+
+  <rect x="336" y="120" width="110" height="20" rx="4" fill="rgba(216,90,48,0.16)" stroke="rgba(216,90,48,0.4)" stroke-width="1"/>
+  <text x="391" y="134" class="mono" font-size="9" fill="#f09070" text-anchor="middle">GNN R²: 0.9867</text>
+
+  <!-- Divider -->
+  <line x1="48" y1="156" x2="1152" y2="156" stroke="rgba(83,74,183,0.25)" stroke-width="1"/>
+
+  <!-- ── DATA INPUT BOX ── -->
+  <rect x="440" y="170" width="320" height="52" rx="8" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+  <text x="600" y="192" text-anchor="middle" font-size="10" fill="#888" class="mono">INPUT</text>
+  <text x="600" y="210" text-anchor="middle" font-size="13" font-weight="600" fill="#c8cde0">GSE166635 · 25,189 cells</text>
+  <text x="600" y="226" text-anchor="middle" font-size="10" fill="#555">HCC1 (normal tissue)  +  HCC2 (tumor tissue)</text>
+
+  <!-- Input arrow down -->
+  <line x1="600" y1="222" x2="600" y2="246" stroke="rgba(255,255,255,0.2)" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <polygon points="595,246 605,246 600,254" fill="rgba(255,255,255,0.25)"/>
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       NOTEBOOK COLUMNS  (y starts ~265)
+       NB1: x=48-408  NB2: x=430-790  NB3: x=812-1152
+       ══════════════════════════════════════════════════════════════════ -->
+
+  <!-- ── NB1 column bg ── -->
+  <rect x="48" y="265" width="356" height="490" rx="10" fill="url(#nb1fill)" stroke="rgba(83,74,183,0.35)" stroke-width="1"/>
+
+  <!-- NB1 header tab -->
+  <rect x="48" y="265" width="356" height="38" rx="10" fill="rgba(83,74,183,0.3)"/>
+  <rect x="48" y="283" width="356" height="20" fill="rgba(83,74,183,0.3)"/> <!-- bottom edge of tab stays square -->
+  <text x="226" y="289" text-anchor="middle" class="mono" font-size="9" fill="#a49ef5" letter-spacing="1">NOTEBOOK 01</text>
+  <text x="226" y="302" text-anchor="middle" font-size="11.5" font-weight="600" fill="#d0cef8">01_scrna_analysis.ipynb</text>
+
+  <!-- NB1 steps -->
+  <!-- step 1 -->
+  <rect x="68" y="315" width="316" height="44" rx="6" fill="rgba(255,255,255,0.04)" stroke="rgba(83,74,183,0.25)" stroke-width="1"/>
+  <circle cx="90" cy="337" r="10" fill="rgba(83,74,183,0.35)" stroke="rgba(83,74,183,0.6)" stroke-width="1"/>
+  <text x="90" y="341" text-anchor="middle" font-size="9" font-weight="700" fill="#9b93e8">1</text>
+  <text x="108" y="333" font-size="11.5" font-weight="600" fill="#c8cde0">Quality Control &amp; Preprocessing</text>
+  <text x="108" y="349" font-size="9.5" fill="#555">min_genes=200, max_genes=2500, mt &lt; 5%</text>
+
+  <!-- step 2 -->
+  <rect x="68" y="369" width="316" height="44" rx="6" fill="rgba(255,255,255,0.04)" stroke="rgba(83,74,183,0.25)" stroke-width="1"/>
+  <circle cx="90" cy="391" r="10" fill="rgba(83,74,183,0.35)" stroke="rgba(83,74,183,0.6)" stroke-width="1"/>
+  <text x="90" y="395" text-anchor="middle" font-size="9" font-weight="700" fill="#9b93e8">2</text>
+  <text x="108" y="387" font-size="11.5" font-weight="600" fill="#c8cde0">Feature Selection &amp; Dim. Reduction</text>
+  <text x="108" y="403" font-size="9.5" fill="#555">2000 HVGs · PCA (10 PCs, 78% var) · UMAP</text>
+
+  <!-- step 3 -->
+  <rect x="68" y="423" width="316" height="44" rx="6" fill="rgba(255,255,255,0.04)" stroke="rgba(83,74,183,0.25)" stroke-width="1"/>
+  <circle cx="90" cy="445" r="10" fill="rgba(83,74,183,0.35)" stroke="rgba(83,74,183,0.6)" stroke-width="1"/>
+  <text x="90" y="449" text-anchor="middle" font-size="9" font-weight="700" fill="#9b93e8">3</text>
+  <text x="108" y="441" font-size="11.5" font-weight="600" fill="#c8cde0">Cell Clustering &amp; Annotation</text>
+  <text x="108" y="457" font-size="9.5" fill="#555">Louvain res=0.5 · 11 clusters · CellTypist</text>
+
+  <!-- step 4 -->
+  <rect x="68" y="477" width="316" height="44" rx="6" fill="rgba(255,255,255,0.04)" stroke="rgba(83,74,183,0.25)" stroke-width="1"/>
+  <circle cx="90" cy="499" r="10" fill="rgba(83,74,183,0.35)" stroke="rgba(83,74,183,0.6)" stroke-width="1"/>
+  <text x="90" y="503" text-anchor="middle" font-size="9" font-weight="700" fill="#9b93e8">4</text>
+  <text x="108" y="495" font-size="11.5" font-weight="600" fill="#c8cde0">Pseudotime Trajectory Analysis</text>
+  <text x="108" y="511" font-size="9.5" fill="#555">Slingshot · AFP/GPC3 → EPCAM/SPP1</text>
+
+  <!-- step 5 -->
+  <rect x="68" y="531" width="316" height="44" rx="6" fill="rgba(255,255,255,0.04)" stroke="rgba(83,74,183,0.25)" stroke-width="1"/>
+  <circle cx="90" cy="553" r="10" fill="rgba(83,74,183,0.35)" stroke="rgba(83,74,183,0.6)" stroke-width="1"/>
+  <text x="90" y="557" text-anchor="middle" font-size="9" font-weight="700" fill="#9b93e8">5</text>
+  <text x="108" y="549" font-size="11.5" font-weight="600" fill="#c8cde0">Differential Expression Analysis</text>
+  <text x="108" y="565" font-size="9.5" fill="#555">1178 DEGs · 926 up, 252 down · Wilcoxon</text>
+
+  <!-- step 6 -->
+  <rect x="68" y="585" width="316" height="44" rx="6" fill="rgba(255,255,255,0.04)" stroke="rgba(83,74,183,0.25)" stroke-width="1"/>
+  <circle cx="90" cy="607" r="10" fill="rgba(83,74,183,0.35)" stroke="rgba(83,74,183,0.6)" stroke-width="1"/>
+  <text x="90" y="611" text-anchor="middle" font-size="9" font-weight="700" fill="#9b93e8">6</text>
+  <text x="108" y="603" font-size="11.5" font-weight="600" fill="#c8cde0">GSEA &amp; Pathway Enrichment</text>
+  <text x="108" y="619" font-size="9.5" fill="#555">KEGG · Reactome · DisGeNET</text>
+
+  <!-- NB1 output -->
+  <rect x="68" y="642" width="316" height="36" rx="6" fill="rgba(83,74,183,0.18)" stroke="rgba(83,74,183,0.5)" stroke-width="1"/>
+  <text x="226" y="658" text-anchor="middle" font-size="9" fill="#a49ef5" class="mono">OUTPUT</text>
+  <text x="226" y="672" text-anchor="middle" font-size="10" font-weight="600" fill="#c0bcf5">dea_results.csv  ·  adata_processed.h5ad</text>
+
+  <!-- ── NB2 column bg ── -->
+  <rect x="422" y="265" width="356" height="490" rx="10" fill="url(#nb2fill)" stroke="rgba(29,158,117,0.35)" stroke-width="1"/>
+
+  <!-- NB2 header tab -->
+  <rect x="422" y="265" width="356" height="38" rx="10" fill="rgba(29,158,117,0.28)"/>
+  <rect x="422" y="283" width="356" height="20" fill="rgba(29,158,117,0.28)"/>
+  <text x="600" y="289" text-anchor="middle" class="mono" font-size="9" fill="#65d4a8" letter-spacing="1">NOTEBOOK 02</text>
+  <text x="600" y="302" text-anchor="middle" font-size="11.5" font-weight="600" fill="#bdf0da">02_target_prioritisation.ipynb</text>
+
+  <!-- NB2 steps -->
+  <!-- step 1 -->
+  <rect x="442" y="315" width="316" height="44" rx="6" fill="rgba(255,255,255,0.04)" stroke="rgba(29,158,117,0.25)" stroke-width="1"/>
+  <circle cx="464" cy="337" r="10" fill="rgba(29,158,117,0.3)" stroke="rgba(29,158,117,0.6)" stroke-width="1"/>
+  <text x="464" y="341" text-anchor="middle" font-size="9" font-weight="700" fill="#65d4a8">1</text>
+  <text x="482" y="333" font-size="11.5" font-weight="600" fill="#c8cde0">PPI Network Construction</text>
+  <text x="482" y="349" font-size="9.5" fill="#555">STRINGdb · 1178 DEGs · Hub genes (Cytohubba)</text>
+
+  <!-- step 2 -->
+  <rect x="442" y="369" width="316" height="44" rx="6" fill="rgba(255,255,255,0.04)" stroke="rgba(29,158,117,0.25)" stroke-width="1"/>
+  <circle cx="464" cy="391" r="10" fill="rgba(29,158,117,0.3)" stroke="rgba(29,158,117,0.6)" stroke-width="1"/>
+  <text x="464" y="395" text-anchor="middle" font-size="9" font-weight="700" fill="#65d4a8">2</text>
+  <text x="482" y="387" font-size="11.5" font-weight="600" fill="#c8cde0">Survival Analysis</text>
+  <text x="482" y="403" font-size="9.5" fill="#555">Kaplan–Meier · APOE/ALB protective · XIST/FTL risk</text>
+
+  <!-- step 3 -->
+  <rect x="442" y="423" width="316" height="44" rx="6" fill="rgba(255,255,255,0.04)" stroke="rgba(29,158,117,0.25)" stroke-width="1"/>
+  <circle cx="464" cy="445" r="10" fill="rgba(29,158,117,0.3)" stroke="rgba(29,158,117,0.6)" stroke-width="1"/>
+  <text x="464" y="449" text-anchor="middle" font-size="9" font-weight="700" fill="#65d4a8">3</text>
+  <text x="482" y="441" font-size="11.5" font-weight="600" fill="#c8cde0">Immune Cell Infiltration</text>
+  <text x="482" y="457" font-size="9.5" fill="#555">CIBERSORT · TAMs 2.5× enriched in HCC2</text>
+
+  <!-- step 4 -->
+  <rect x="442" y="477" width="316" height="44" rx="6" fill="rgba(255,255,255,0.04)" stroke="rgba(29,158,117,0.25)" stroke-width="1"/>
+  <circle cx="464" cy="499" r="10" fill="rgba(29,158,117,0.3)" stroke="rgba(29,158,117,0.6)" stroke-width="1"/>
+  <text x="464" y="503" text-anchor="middle" font-size="9" font-weight="700" fill="#65d4a8">4</text>
+  <text x="482" y="495" font-size="11.5" font-weight="600" fill="#c8cde0">Gene Scoring &amp; Expression Profiles</text>
+  <text x="482" y="511" font-size="9.5" fill="#555">CustomGeneScore1 across cell identities</text>
+
+  <!-- step 5 -->
+  <rect x="442" y="531" width="316" height="44" rx="6" fill="rgba(255,255,255,0.04)" stroke="rgba(29,158,117,0.25)" stroke-width="1"/>
+  <circle cx="464" cy="553" r="10" fill="rgba(29,158,117,0.3)" stroke="rgba(29,158,117,0.6)" stroke-width="1"/>
+  <text x="464" y="557" text-anchor="middle" font-size="9" font-weight="700" fill="#65d4a8">5</text>
+  <text x="482" y="549" font-size="11.5" font-weight="600" fill="#c8cde0">Drug Sensitivity Analysis</text>
+  <text x="482" y="565" font-size="9.5" fill="#555">DGIdb · SERPINA1 / APOA2 / ALB targets</text>
+
+  <!-- step 6 -->
+  <rect x="442" y="585" width="316" height="44" rx="6" fill="rgba(255,255,255,0.04)" stroke="rgba(29,158,117,0.25)" stroke-width="1"/>
+  <circle cx="464" cy="607" r="10" fill="rgba(29,158,117,0.3)" stroke="rgba(29,158,117,0.6)" stroke-width="1"/>
+  <text x="464" y="611" text-anchor="middle" font-size="9" font-weight="700" fill="#65d4a8">6</text>
+  <text x="482" y="603" font-size="11.5" font-weight="600" fill="#c8cde0">Drug Subtype Sensitivity Heatmap</text>
+  <text x="482" y="619" font-size="9.5" fill="#555">Immune-Hot/Cold/Stromal-Rich subtypes</text>
+
+  <!-- NB2 output -->
+  <rect x="442" y="642" width="316" height="36" rx="6" fill="rgba(29,158,117,0.18)" stroke="rgba(29,158,117,0.5)" stroke-width="1"/>
+  <text x="600" y="658" text-anchor="middle" font-size="9" fill="#65d4a8" class="mono">OUTPUT</text>
+  <text x="600" y="672" text-anchor="middle" font-size="10" font-weight="600" fill="#bdf0da">drug_gene_pairs.csv  ·  survival_results.csv</text>
+
+  <!-- ── NB3 column bg ── -->
+  <rect x="796" y="265" width="356" height="490" rx="10" fill="url(#nb3fill)" stroke="rgba(216,90,48,0.35)" stroke-width="1"/>
+
+  <!-- NB3 header tab -->
+  <rect x="796" y="265" width="356" height="38" rx="10" fill="rgba(216,90,48,0.25)"/>
+  <rect x="796" y="283" width="356" height="20" fill="rgba(216,90,48,0.25)"/>
+  <text x="974" y="289" text-anchor="middle" class="mono" font-size="9" fill="#f09070" letter-spacing="1">NOTEBOOK 03</text>
+  <text x="974" y="302" text-anchor="middle" font-size="11.5" font-weight="600" fill="#fbd5c8">03_gnn_drug_ranking.ipynb</text>
+
+  <!-- NB3 steps -->
+  <!-- step 1 -->
+  <rect x="816" y="315" width="316" height="44" rx="6" fill="rgba(255,255,255,0.04)" stroke="rgba(216,90,48,0.25)" stroke-width="1"/>
+  <circle cx="838" cy="337" r="10" fill="rgba(216,90,48,0.28)" stroke="rgba(216,90,48,0.6)" stroke-width="1"/>
+  <text x="838" y="341" text-anchor="middle" font-size="9" font-weight="700" fill="#f09070">1</text>
+  <text x="856" y="333" font-size="11.5" font-weight="600" fill="#c8cde0">Graph Construction</text>
+  <text x="856" y="349" font-size="9.5" fill="#555">Nodes: genes &amp; drugs · Edges: interactions</text>
+
+  <!-- step 2 -->
+  <rect x="816" y="369" width="316" height="44" rx="6" fill="rgba(255,255,255,0.04)" stroke="rgba(216,90,48,0.25)" stroke-width="1"/>
+  <circle cx="838" cy="391" r="10" fill="rgba(216,90,48,0.28)" stroke="rgba(216,90,48,0.6)" stroke-width="1"/>
+  <text x="838" y="395" text-anchor="middle" font-size="9" font-weight="700" fill="#f09070">2</text>
+  <text x="856" y="387" font-size="11.5" font-weight="600" fill="#c8cde0">Feature Engineering</text>
+  <text x="856" y="403" font-size="9.5" fill="#555">MACCS fingerprints · one-hot · gene expr.</text>
+
+  <!-- step 3 -->
+  <rect x="816" y="423" width="316" height="44" rx="6" fill="rgba(255,255,255,0.04)" stroke="rgba(216,90,48,0.25)" stroke-width="1"/>
+  <circle cx="838" cy="445" r="10" fill="rgba(216,90,48,0.28)" stroke="rgba(216,90,48,0.6)" stroke-width="1"/>
+  <text x="838" y="449" text-anchor="middle" font-size="9" font-weight="700" fill="#f09070">3</text>
+  <text x="856" y="441" font-size="11.5" font-weight="600" fill="#c8cde0">GCN Training</text>
+  <text x="856" y="457" font-size="9.5" fill="#555">2-layer GCN · 100 epochs · semi-supervised</text>
+
+  <!-- step 4 -->
+  <rect x="816" y="477" width="316" height="44" rx="6" fill="rgba(255,255,255,0.04)" stroke="rgba(216,90,48,0.25)" stroke-width="1"/>
+  <circle cx="838" cy="499" r="10" fill="rgba(216,90,48,0.28)" stroke="rgba(216,90,48,0.6)" stroke-width="1"/>
+  <text x="838" y="503" text-anchor="middle" font-size="9" font-weight="700" fill="#f09070">4</text>
+  <text x="856" y="495" font-size="11.5" font-weight="600" fill="#c8cde0">Model Evaluation</text>
+  <text x="856" y="511" font-size="9.5" fill="#555">R²=0.9867 · MSE=0.0581 · Acc=97.5%</text>
+
+  <!-- step 5 -->
+  <rect x="816" y="531" width="316" height="44" rx="6" fill="rgba(255,255,255,0.04)" stroke="rgba(216,90,48,0.25)" stroke-width="1"/>
+  <circle cx="838" cy="553" r="10" fill="rgba(216,90,48,0.28)" stroke="rgba(216,90,48,0.6)" stroke-width="1"/>
+  <text x="838" y="557" text-anchor="middle" font-size="9" font-weight="700" fill="#f09070">5</text>
+  <text x="856" y="549" font-size="11.5" font-weight="600" fill="#c8cde0">Drug Candidate Ranking</text>
+  <text x="856" y="565" font-size="9.5" fill="#555">Gadobenate Dimeglumine · Fluvastatin</text>
+
+  <!-- step 6 -->
+  <rect x="816" y="585" width="316" height="44" rx="6" fill="rgba(255,255,255,0.04)" stroke="rgba(216,90,48,0.25)" stroke-width="1"/>
+  <circle cx="838" cy="607" r="10" fill="rgba(216,90,48,0.28)" stroke="rgba(216,90,48,0.6)" stroke-width="1"/>
+  <text x="838" y="611" text-anchor="middle" font-size="9" font-weight="700" fill="#f09070">6</text>
+  <text x="856" y="603" font-size="11.5" font-weight="600" fill="#c8cde0">Drug-Gene Interaction Network</text>
+  <text x="856" y="619" font-size="9.5" fill="#555">APOE &amp; ALB as hub nodes · repurposing map</text>
+
+  <!-- NB3 output -->
+  <rect x="816" y="642" width="316" height="36" rx="6" fill="rgba(216,90,48,0.18)" stroke="rgba(216,90,48,0.5)" stroke-width="1"/>
+  <text x="974" y="658" text-anchor="middle" font-size="9" fill="#f09070" class="mono">OUTPUT</text>
+  <text x="974" y="672" text-anchor="middle" font-size="10" font-weight="600" fill="#fbd5c8">ranked_drugs.csv  ·  gnn_interaction_network.png</text>
+
+  <!-- ══ INTER-COLUMN ARROWS ══ -->
+  <!-- NB1 → NB2 -->
+  <line x1="404" y1="500" x2="422" y2="500" stroke="url(#arrow1)" stroke-width="2"/>
+  <polygon points="415,495 422,500 415,505" fill="rgba(29,158,117,0.7)"/>
+
+  <!-- NB2 → NB3 -->
+  <line x1="778" y1="500" x2="796" y2="500" stroke="url(#arrow2)" stroke-width="2"/>
+  <polygon points="789,495 796,500 789,505" fill="rgba(216,90,48,0.7)"/>
+
+  <!-- ══ BOTTOM FINDINGS BAR ══ -->
+  <rect x="48" y="768" width="1104" height="68" rx="8" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="600" y="788" text-anchor="middle" font-size="9" class="mono" fill="#444" letter-spacing="2">KEY FINDINGS</text>
+
+  <!-- Finding chips -->
+  <rect x="72" y="796" width="180" height="24" rx="5" fill="rgba(83,74,183,0.15)" stroke="rgba(83,74,183,0.4)" stroke-width="1"/>
+  <text x="162" y="812" text-anchor="middle" font-size="10" fill="#a49ef5">1178 DEGs identified</text>
+
+  <rect x="264" y="796" width="196" height="24" rx="5" fill="rgba(83,74,183,0.15)" stroke="rgba(83,74,183,0.4)" stroke-width="1"/>
+  <text x="362" y="812" text-anchor="middle" font-size="10" fill="#a49ef5">APOE &amp; ALB → better prognosis</text>
+
+  <rect x="472" y="796" width="196" height="24" rx="5" fill="rgba(29,158,117,0.15)" stroke="rgba(29,158,117,0.4)" stroke-width="1"/>
+  <text x="570" y="812" text-anchor="middle" font-size="10" fill="#65d4a8">XIST &amp; FTL → poor survival</text>
+
+  <rect x="680" y="796" width="196" height="24" rx="5" fill="rgba(29,158,117,0.15)" stroke="rgba(29,158,117,0.4)" stroke-width="1"/>
+  <text x="778" y="812" text-anchor="middle" font-size="10" fill="#65d4a8">TAMs: 2.5× enriched in tumor</text>
+
+  <rect x="888" y="796" width="236" height="24" rx="5" fill="rgba(216,90,48,0.15)" stroke="rgba(216,90,48,0.4)" stroke-width="1"/>
+  <text x="1006" y="812" text-anchor="middle" font-size="10" fill="#f09070">Gadobenate / Fluvastatin candidates</text>
+
+  <!-- Footer -->
+  <text x="48" y="848" font-size="9" fill="#2a2d40">Based on: Wang et al., npj Precision Oncology (2025) · doi:10.1038/s41698-025-00952-3</text>
+  <text x="1152" y="848" text-anchor="end" font-size="9" fill="#2a2d40">github.com/fshokor/HCC_DD</text>
+
+</svg>

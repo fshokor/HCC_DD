@@ -53,6 +53,9 @@ from .gsea_functions import (
     prepare_ranked_list,
     run_gsea_r,
     print_gsea_summary,
+    plot_gene_pathway_membership,
+    query_gene_pathways,
+    generate_pathway_summary_table
 )
 
 from .dea_functions import (

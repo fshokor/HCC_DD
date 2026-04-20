@@ -44,7 +44,7 @@ PHASE_COLORS  = {0: "#D3D1C7", 1: "#B5D4F4", 2: "#378ADD",
 def plot_ppi_network(
     G: "nx.Graph",
     hub_df: pd.DataFrame,
-    top_nodes: int = 80,
+    top_nodes: int = 15,
     top_labels: int = 15,
     string_score: int = 400,
     log2fc_thresh: float = 1.0,
