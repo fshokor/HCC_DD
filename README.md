@@ -1,13 +1,4 @@
 # HCC Drug Discovery Pipeline
-
-**Integrating single-cell RNA sequencing and graph neural networks for
-multi-targeted drug design in hepatocellular carcinoma.**
-
-> Based on: Wang et al. (2025) — *Integrating single-cell RNA sequencing and
-> artificial intelligence for multitargeted drug design for combating resistance
-> in liver cancer.* npj Precision Oncology 9:309.
-> [doi:10.1038/s41698-025-00952-3](https://doi.org/10.1038/s41698-025-00952-3)
-
 ---
 
 ## Overview
@@ -150,43 +141,6 @@ making it independently testable and reusable.
 
 ---
 
-## Key outputs
-
-After running all three notebooks, the following files are produced in `results/`:
-
-**Processed data**
-
-| File | Description |
-|------|-------------|
-| `tables/dea_results.csv` | 1,178+ differentially expressed genes with log₂FC, adjusted p-value, and direction |
-| `tables/hub_genes.csv` | PPI hub genes ranked by composite centrality score |
-| `tables/survival_filtered_genes.csv` | Hub genes with significant survival association (Kaplan–Meier + Cox) |
-| `tables/dgi_edges_gnn.csv` | Scored drug–gene interaction graph (GNN-ready edge list) |
-| `tables/gnn_drug_ranking.csv` | Final ranked drug candidates with GNN score, original score, and delta |
-| `models/gcn_best.pt` | Trained GraphSAGE model weights |
-
-**Figures**
-
-| File | Description |
-|------|-------------|
-| `figures/umap_annotation.png` | UMAP coloured by majority-vote cell-type annotation |
-| `figures/umap_leiden.png` | UMAP coloured by Leiden cluster + sample origin |
-| `figures/volcano_plot.png` | DEA volcano plot — tumour vs. normal-adjacent |
-| `figures/dgi_summary_dashboard.png` | 5-panel drug–gene interaction summary |
-| `figures/dgi_panel_*.png` | Individual dashboard panels (A–E) saved separately |
-| `figures/gnn_drug_ranking.png` | Top 25 drug candidates bar chart |
-| `figures/drug_gene_network.png` | Bipartite drug–gene interaction network |
-| `figures/gnn_training_curves.png` | Training loss curves for all three GNN models |
-
-**Reports** (open in any browser)
-
-| File | Audience |
-|------|----------|
-| `reports/01_scrna_analysis_report.html` | Biology experts reviewing cell-type composition, QC metrics, DEGs, and pathways |
-| `reports/02_target_prioritisation_report.html` | Reviewing hub genes, survival associations, and drug candidates |
-| `reports/03_gnn_drug_ranking_report.html` | Reviewing model performance and the final ranked repurposing list |
-
----
 
 ## Original contributions
 
@@ -210,25 +164,6 @@ This repository adds the following beyond the Wang et al. (2025) paper:
 - **Pipeline test script.** `run_pipeline_test.py` validates the full scRNA-seq
   pipeline in a Python-only mode (no R required) for CI and environment checks.
 
----
-
-## Citation
-
-If you use this code, please cite the original paper:
-
-```bibtex
-@article{wang2025hcc,
-  title     = {Integrating single-cell {RNA} sequencing and artificial intelligence
-               for multitargeted drug design for combating resistance in liver cancer},
-  author    = {Wang, Houhong and Yang, Youyuan and Zhang, Junfeng and
-               Chen, Wenli and Dai, Jingyou and Li, Changquan and Li, Qing},
-  journal   = {npj Precision Oncology},
-  volume    = {9},
-  pages     = {309},
-  year      = {2025},
-  doi       = {10.1038/s41698-025-00952-3}
-}
-```
 
 ---
 
