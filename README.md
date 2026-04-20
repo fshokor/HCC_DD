@@ -1,284 +1,234 @@
 # HCC Drug Discovery Pipeline
 
-Integrating single-cell RNA sequencing and graph neural networks for
-multi-targeted drug design in hepatocellular carcinoma.
+**Integrating single-cell RNA sequencing and graph neural networks for
+multi-targeted drug design in hepatocellular carcinoma.**
 
-**Based on:** Wang et al. (2025) — *Integrating single-cell RNA sequencing and
-artificial intelligence for multitargeted drug design for combating resistance
-in liver cancer.* npj Precision Oncology 9:309.
-[doi:10.1038/s41698-025-00952-3](https://doi.org/10.1038/s41698-025-00952-3)
+> Based on: Wang et al. (2025) — *Integrating single-cell RNA sequencing and
+> artificial intelligence for multitargeted drug design for combating resistance
+> in liver cancer.* npj Precision Oncology 9:309.
+> [doi:10.1038/s41698-025-00952-3](https://doi.org/10.1038/s41698-025-00952-3)
 
 ---
 
 ## Overview
 
-This repository reproduces and extends the computational pipeline from the paper
-above, covering the full journey from raw scRNA-seq data to ranked drug candidates.
-It combines single-cell transcriptomics (Scanpy, CellTypist, SingleR, ScType)
-with graph-based deep learning (PyTorch Geometric) to identify and prioritise
-therapeutic targets in hepatocellular carcinoma (HCC).
+Hepatocellular carcinoma (HCC) is the most common primary liver cancer,
+accounting for 75–85% of all liver cancers worldwide. It is typically diagnosed
+at an advanced stage, carries a poor prognosis, and rapidly develops resistance
+to conventional therapies. A key challenge is that HCC is highly heterogeneous
+at the cellular and molecular level — and standard bulk RNA-sequencing averages
+over this diversity, masking critical tumour-immune interactions.
 
-```
-Raw MTX files (GEO: GSE166635)
-        │
-        ▼
- 01 · Preprocessing & QC          scrna_functions.py
-        │
-        ▼
- 02 · Clustering                   scrna_functions.py
-        │
-        ▼
- 03 · Cell-type annotation         scrna_functions.py
-        │   CellTypist · ScType (R) · SingleR (R) · 4-way majority vote
-        ▼
- 04 · Differential expression      dea_functions.py
-        │   Wilcoxon rank-sum · volcano plot
-        ▼
- 05 · GSEA & pathway networks      gsea_functions.py
-        │   clusterProfiler (R) · GO-BP/MF/CC · KEGG
-        ▼
- P1 · PPI network & hub genes      ppi_functions.py
-        │   STRING API · NetworkX · composite centrality score
-        ▼
- P2 · Survival filter              survival_functions.py
-        │   Kaplan–Meier · Cox regression · TCGA-LIHC (n≈374)
-        ▼
- P3 · Drug–gene interactions       dgi_functions.py
-        │   DGIdb · ChEMBL · OpenTargets · curated fallback
-        ▼
- P4 · GNN training & ranking       gnn_functions.py
-             GCN · GAT · GraphSAGE (PyTorch Geometric)
-             Google Colab / GPU ready
-```
+This pipeline addresses that challenge by combining **single-cell RNA sequencing
+(scRNA-seq)** with **graph neural network (GNN)-based drug discovery** to
+systematically:
+
+1. **Map the HCC tumour microenvironment** at single-cell resolution — identifying
+   distinct cell populations (hepatocytes, macrophages, T cells, fibroblasts,
+   endothelial cells) and their transcriptional states in tumour vs. normal-adjacent
+   tissue.
+2. **Identify prognostic biomarkers** through differential expression analysis and
+   survival correlation — flagging genes such as *APOE* and *ALB* (protective) and
+   *XIST* and *FTL* (risk-associated).
+3. **Prioritise therapeutic targets** via protein–protein interaction network
+   analysis and survival filtering of hub genes.
+4. **Rank drug repurposing candidates** using a GNN trained on a bipartite
+   drug–gene interaction graph, producing a scored list of approved compounds
+   with predicted therapeutic relevance to HCC.
+
+Each step generates a **self-contained HTML report** that biology experts can
+read directly — no coding knowledge required.
 
 ---
 
-## Repository structure
+## Pipeline
 
-```
-HCC_DD/
-├── notebooks/
-│   ├── 01_preprocessing.ipynb          QC, normalisation, HVG selection
-│   ├── 02_clustering.ipynb             PCA, UMAP, Leiden clustering
-│   ├── 03_annotation.ipynb             CellTypist + ScType + SingleR + vote
-│   ├── 04_dea.ipynb                    Wilcoxon DEA + volcano plot
-│   ├── 05_gsea.ipynb                   GSEA via clusterProfiler (R)
-│   ├── P1_ppi_network.ipynb            STRING PPI + hub gene ranking
-│   ├── P2_survival_filter.ipynb        KM + Cox survival analysis
-│   ├── P3_drug_gene_interactions.ipynb DGIdb / ChEMBL / OpenTargets
-│   └── P4_gnn.ipynb                    GNN training + drug ranking
-│                                       (Colab / GPU compatible)
-│
-├── scripts/
-│  
-│   ├── data_download.py                Downloads GSE166635, writes paths.py
-│   └── utils/
-│           ├── __init__.py
-            ├── scrna_functions.py              scRNA-seq utilities (notebooks 01–03)
-│           ├── dea_functions.py                DEA utilities (notebook 04)
-│           ├── gsea_functions.py               GSEA utilities (notebook 05)
-│           ├── ppi_functions.py                PPI utilities (notebook P1)
-│           ├── survival_functions.py           Survival utilities (notebook P2)
-│           ├── dgi_functions.py                DGI utilities (notebook P3)
-│           ├── gnn_functions.py                GNN models + training (notebook P4)
-│           ├── graph_utils.py              PPI + GNN graph construction
-│           ├── plot_utils.py               All matplotlib figure functions
-│           └── api_clients.py              DGIdb / ChEMBL / OpenTargets clients
-│
-├── env/
-│   ├── environment.yml                 Conda environment (CPU)
-│   ├── environment_gpu.yml             Conda environment (CUDA 12.1)
-│   ├── requirements.txt                pip fallback
-│   ├── setup_env.sh                    Automated setup script
-│   ├── r_packages.R                    R package installer
-│   └── .python-version                 Python 3.12 pin
-│
-├── results/
-│   ├── figures/                        PNG figures
-│   ├── tables/                         CSV outputs
-│   └── reports/                        Text summaries
-│
-├── models/                             GNN weights and scalers (.pt, .pkl)
-│
-├── docs/
-│   ├── METHODS.md                      Detailed computational methods
-│   └── data_sources.md                 Data licences and download URLs
-│
-├── .gitignore
-└── README.md
-```
+![Pipeline diagram](docs/pipeline.svg)
 
-> **Note:** `data/` and `paths.py` are excluded from git.
-> They are created locally by running `python scripts/data_download.py`.
+The pipeline runs in three main notebooks, each producing a human-readable
+HTML report alongside its analytical outputs:
+
+| Notebook | What it does |
+|----------|-------------|
+| **01 · scRNA-seq Analysis** | QC, normalisation, UMAP clustering, 4-way cell-type annotation, DEA, GSEA |
+| **02 · Target Prioritisation** | PPI hub gene network (STRING), survival filter (TCGA-LIHC), drug–gene interactions (DGIdb, ChEMBL, OpenTargets) |
+| **03 · GNN Drug Ranking** | Trains GCN / GAT / GraphSAGE on the interaction graph, re-scores all drug–gene pairs, produces a ranked repurposing list |
 
 ---
 
 ## Quick start
 
-### 1 — Clone the repo
+### 1 — Clone
 
 ```bash
 git clone https://github.com/fshokor/HCC_DD.git
 cd HCC_DD
 ```
 
-### 2 — Set up the environment
+### 2 — Environment
 
 ```bash
-chmod +x env/setup_env.sh
+# CPU (sufficient for notebooks 01–02)
+conda env create -f env/environment.yml
+conda activate hcc_drug_discovery
 
-# CPU-only (works on any machine, sufficient for this project)
-./env/setup_env.sh
-
-# GPU support (CUDA 12.1, for notebook P4)
-./env/setup_env.sh --gpu
-
+# GPU (CUDA 12.1, recommended for notebook 03)
+conda env create -f env/environment_gpu.yml
 conda activate hcc_drug_discovery
 ```
 
-#### R packages (required for notebooks 03 and 05)
+**R packages** (required for cell-type annotation and GSEA in notebook 01):
 
 ```bash
 Rscript env/r_packages.R
 ```
 
-### 3 — Download the data
+**Key dependencies:**
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| scanpy | ≥ 1.9 | scRNA-seq analysis |
+| celltypist | ≥ 1.6 | Automated cell-type annotation |
+| torch | ≥ 2.0 | GNN training |
+| torch-geometric | ≥ 2.4 | Graph neural networks |
+| rpy2 | ≥ 3.5 | Python ↔ R bridge |
+| networkx | ≥ 3.0 | PPI network construction |
+| numpy | < 2.0 | (pinned for torch-geometric compatibility) |
+
+### 3 — Download data
 
 ```bash
 python scripts/data_download.py
 ```
 
-Downloads GSE166635 (~204 MB) from NCBI GEO, extracts HCC1 and HCC2 MTX
-triplets, and writes `paths.py` at the repo root. All notebooks find their
-files automatically from `paths.py`, regardless of where the repo was cloned.
+Downloads GSE166635 (~204 MB) from NCBI GEO, extracts the HCC1 (normal-adjacent)
+and HCC2 (tumour) 10x Genomics MTX files, and writes `paths.py` at the repo root.
+All notebooks import paths from this file automatically.
 
-### 4 — Run the pipeline
+### 4 — Test the installation
 
-**Step by step** (recommended):
+```bash
+python scripts/run_pipeline_test.py
+```
+
+Runs the full scRNA-seq pipeline (QC → clustering → annotation) using Python-only
+methods — no R required. Exits with code 0 on success and produces four output
+files in `results/`: a UMAP figure, cluster summary CSV, and annotated `.h5ad`.
+Use this to verify your environment before running the full notebooks.
+
+### 5 — Run the pipeline
+
+Open JupyterLab and run the notebooks in order:
 
 ```bash
 jupyter lab
-# Run in order: 01 → 02 → 03 → 04 → 05 → 06 → P1 → P2 → P3 → P4
 ```
 
-**P4 on Google Colab with GPU:**
+```
+01_scrna_analysis.ipynb   →   02_target_prioritisation.ipynb   →   03_gnn_drug_ranking.ipynb
+```
 
-1. Upload `results/tables/dgi_edges_gnn.csv` to the Colab session (Files → Upload)
-2. Open `notebooks/P4_gnn.ipynb` in Colab
-3. Runtime → Change runtime type → **T4 GPU**
-4. Run all cells — Colab mode is auto-detected, PyG installs automatically
+> **Notebook 03 on Google Colab (GPU):**
+> 1. Upload `results/tables/dgi_edges_gnn.csv` via Files → Upload
+> 2. Open `notebooks/03_gnn_drug_ranking.ipynb` in Colab
+> 3. Runtime → Change runtime type → **T4 GPU**
+> 4. Run all — Colab mode is auto-detected, PyG installs automatically
 
 ---
 
 ## Notebook guide
 
-| Notebook | Input | Output | Logic in |
-|----------|-------|--------|----------|
-| `01_preprocessing` | `data/raw/HCC1,HCC2/` | `adata_processed.h5ad` | `scrna_functions.py` |
-| `02_clustering` | `adata_processed.h5ad` | `adata_clustered.h5ad` | `scrna_functions.py` |
-| `03_annotation` | `adata_clustered.h5ad` | `adata_annotated.h5ad` | `scrna_functions.py` |
-| `04_dea` | `adata_annotated.h5ad` | `dea_results.csv` | `dea_functions.py` |
-| `05_gsea` | `dea_results.csv` | `gsea_*.csv`, figures | `gsea_functions.py` |
-| `06_immune_infiltration` | `adata_annotated.h5ad` | macrophage figures | — |
-| `P1_ppi_network` | `dea_results.csv` | `hub_genes.csv` | `ppi_functions.py` |
-| `P2_survival_filter` | `hub_genes.csv` | `survival_filtered_genes.csv` | `survival_functions.py` |
-| `P3_drug_gene_interactions` | `hub_genes.csv` | `dgi_edges_gnn.csv` | `dgi_functions.py` |
-| `P4_gnn` | `dgi_edges_gnn.csv` | `gnn_drug_ranking.csv`, `gcn_best.pt` | `gnn_functions.py` |
+| Notebook | Input | Key outputs | Logic script |
+|----------|-------|-------------|-------------|
+| `01_scrna_analysis.ipynb` | `data/raw/HCC1,HCC2/` | `adata_annotated.h5ad` · `dea_results.csv` · `gsea_*.csv` · figures · HTML report | `scrna_functions.py` · `dea_functions.py` · `gsea_functions.py` |
+| `02_target_prioritisation.ipynb` | `dea_results.csv` | `hub_genes.csv` · `survival_filtered_genes.csv` · `dgi_edges_gnn.csv` · `dgi_summary_dashboard.png` · HTML report | `ppi_functions.py` · `survival_functions.py` · `dgi_functions.py` |
+| `03_gnn_drug_ranking.ipynb` | `dgi_edges_gnn.csv` | `gnn_drug_ranking.csv` · `gcn_best.pt` · `drug_gene_network.png` · HTML report | `gnn_functions.py` |
 
-Each notebook imports its logic from the corresponding `scripts/*_functions.py`
-file. Notebooks contain only configuration and single-line function calls,
-keeping them readable and easy to modify.
-
----
-
-## Database selection (notebook P3)
-
-Notebook P3 lets you choose which drug databases to query. Edit the configuration
-cell before running:
-
-```python
-USE_DGIDB       = True    # DGIdb GraphQL API
-USE_CHEMBL      = True    # ChEMBL REST API
-USE_OPENTARGETS = True    # OpenTargets GraphQL API
-USE_CURATED     = True    # Built-in curated fallback (fills gaps automatically)
-```
-
-The curated fallback activates automatically when no live API returns results
-for a gene, or when all live sources are disabled.
+Each notebook contains only configuration and single-line function calls.
+All analysis logic lives in the corresponding `scripts/*_functions.py` file,
+making it independently testable and reusable.
 
 ---
 
 ## Key outputs
 
+After running all three notebooks, the following files are produced in `results/`:
+
+**Processed data**
+
 | File | Description |
 |------|-------------|
-| `data/processed/dea_results.csv` | 1,178 significant DEGs (padj<0.05, \|log2FC\|>1) |
-| `results/tables/hub_genes.csv` | Hub genes ranked by composite centrality score |
-| `results/tables/survival_filtered_genes.csv` | Survival-significant genes → GNN priority targets |
-| `results/tables/gnn_drug_ranking.csv` | All drugs ranked by GNN-predicted interaction score |
-| `results/tables/gnn_node_embeddings.csv` | 64-dim learned node representations |
-| `results/figures/ppi_network.png` | PPI network coloured by regulation |
-| `results/figures/km_plots.png` | Kaplan–Meier survival grid |
-| `results/figures/gnn_drug_ranking.png` | Top 25 drug candidates chart |
-| `models/gcn_best.pt` | Best trained GNN weights |
-| `models/feature_scaler.pkl` | Feature scaler for inference |
+| `tables/dea_results.csv` | 1,178+ differentially expressed genes with log₂FC, adjusted p-value, and direction |
+| `tables/hub_genes.csv` | PPI hub genes ranked by composite centrality score |
+| `tables/survival_filtered_genes.csv` | Hub genes with significant survival association (Kaplan–Meier + Cox) |
+| `tables/dgi_edges_gnn.csv` | Scored drug–gene interaction graph (GNN-ready edge list) |
+| `tables/gnn_drug_ranking.csv` | Final ranked drug candidates with GNN score, original score, and delta |
+| `models/gcn_best.pt` | Trained GraphSAGE model weights |
 
----
+**Figures**
 
-## Methods summary
+| File | Description |
+|------|-------------|
+| `figures/umap_annotation.png` | UMAP coloured by majority-vote cell-type annotation |
+| `figures/umap_leiden.png` | UMAP coloured by Leiden cluster + sample origin |
+| `figures/volcano_plot.png` | DEA volcano plot — tumour vs. normal-adjacent |
+| `figures/dgi_summary_dashboard.png` | 5-panel drug–gene interaction summary |
+| `figures/dgi_panel_*.png` | Individual dashboard panels (A–E) saved separately |
+| `figures/gnn_drug_ranking.png` | Top 25 drug candidates bar chart |
+| `figures/drug_gene_network.png` | Bipartite drug–gene interaction network |
+| `figures/gnn_training_curves.png` | Training loss curves for all three GNN models |
 
-| Step | Tool | Key parameters |
-|------|------|----------------|
-| QC & preprocessing | Scanpy ≥1.10 | min_genes=200, max_genes=2500, max_mt=5% |
-| HVG selection | Scanpy | n_top_genes=2000, batch_key="sample" |
-| Clustering | Leiden (igraph) | resolution=0.5, 11 clusters |
-| Cell-type annotation | CellTypist + ScType + SingleR | 4-way majority vote; ScType double-weighted for parenchymal types |
-| DEA | Wilcoxon rank-sum | padj<0.05, \|log2FC\|>1 |
-| GSEA | clusterProfiler (R) | GO-BP/MF/CC + KEGG, minGSSize=15, p<0.05 |
-| PPI | STRING API | score≥400, functional network |
-| Survival filter | lifelines KM + Cox | TCGA-LIHC (n≈374), KM p<0.05, Cox p<0.05, \|HR−1\|>0.2 |
-| Drug interactions | DGIdb + ChEMBL + OpenTargets | Composite score: interaction(35%) + publications(20%) + phase(20%) + approval(15%) + hub(10%) |
-| GNN | PyTorch Geometric | GCN / GAT / GraphSAGE compared; best model by test R² |
+**Reports** (open in any browser)
 
-Full methods → [`docs/METHODS.md`](docs/METHODS.md)  
-Data sources and licences → [`docs/data_sources.md`](docs/data_sources.md)
-
----
-
-## Requirements
-
-| Component | Version | Notes |
-|-----------|---------|-------|
-| Python | 3.12 | managed by conda |
-| R | ≥4.3 | annotation (notebook 03) and GSEA (notebook 05) only |
-| GPU | optional | P4 trains in <5 min on CPU; use Colab T4 for faster runs |
-
-See [`env/environment.yml`](env/environment.yml) for the full Python package list.
-R packages are installed separately with `Rscript env/r_packages.R`.
+| File | Audience |
+|------|----------|
+| `reports/01_scrna_analysis_report.html` | Biology experts reviewing cell-type composition, QC metrics, DEGs, and pathways |
+| `reports/02_target_prioritisation_report.html` | Reviewing hub genes, survival associations, and drug candidates |
+| `reports/03_gnn_drug_ranking_report.html` | Reviewing model performance and the final ranked repurposing list |
 
 ---
 
 ## Original contributions
 
-This repository goes beyond the Wang et al. (2025) paper in four ways:
+This repository adds the following beyond the Wang et al. (2025) paper:
 
-**Macrophage sub-cluster analysis** (`06_immune_infiltration.ipynb`). Re-clusters
-tumor-associated macrophages and scores M1, M2, Kupffer, and TAM phenotypes,
-comparing normal vs tumor macrophage composition and identifying phenotype-specific
-DEGs not reported in the paper.
+- **Multi-source cell-type annotation.** Four evidence sources (CellTypist,
+  ScType with liver-specific markers, SingleR/HPCA, and curated marker scoring)
+  combined via majority vote per cluster — more robust than any single method.
+- **Modular architecture.** Each step is separated into a `*_functions.py` script
+  imported by a thin notebook. All logic is independently testable.
+- **Automated HTML reports.** Running the final cell of any notebook produces a
+  complete, self-contained HTML summary for biology stakeholders.
+- **Three GNN architectures compared.** GCN, GAT, and GraphSAGE are all trained
+  and evaluated; the best model (by R²) is used for ranking.
+- **Drug–gene network visualisation.** A bipartite network plot shows the
+  structural relationships between top-ranked drugs and their target hub genes.
+- **Per-panel figure saving.** The DGI dashboard saves each panel individually
+  in addition to the combined figure, for use in presentations and reports.
+- **Google Colab compatibility.** Notebook 03 auto-detects the Colab environment
+  and installs the correct PyG wheels for GPU-accelerated training.
+- **Pipeline test script.** `run_pipeline_test.py` validates the full scRNA-seq
+  pipeline in a Python-only mode (no R required) for CI and environment checks.
 
-**Modular architecture.** Each analysis step is implemented as a function script
-(`scripts/*_functions.py`) imported by a thin notebook. All functions are
-independently testable and reusable outside of Jupyter.
+---
 
-**Configurable database selection.** Notebook P3 lets users enable or disable
-individual drug databases (DGIdb, ChEMBL, OpenTargets) rather than querying
-all three unconditionally, making it easier to work offline or reproduce results
-from a single source.
+## Citation
 
-**Google Colab compatibility.** Notebook P4 auto-detects the Colab environment,
-installs the correct PyG wheels for the available CUDA version, and adapts all
-file paths for the Colab session filesystem — no manual setup required.
+If you use this code, please cite the original paper:
+
+```bibtex
+@article{wang2025hcc,
+  title     = {Integrating single-cell {RNA} sequencing and artificial intelligence
+               for multitargeted drug design for combating resistance in liver cancer},
+  author    = {Wang, Houhong and Yang, Youyuan and Zhang, Junfeng and
+               Chen, Wenli and Dai, Jingyou and Li, Changquan and Li, Qing},
+  journal   = {npj Precision Oncology},
+  volume    = {9},
+  pages     = {309},
+  year      = {2025},
+  doi       = {10.1038/s41698-025-00952-3}
+}
+```
 
 ---
 
