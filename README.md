@@ -16,9 +16,9 @@ HTML report alongside its analytical outputs:
 
 | # | Notebook | What it does | Report |
 |---|----------|-------------|--------|
-| 01 | [`01_scrna_analysis.ipynb`](notebooks/01_scrna_analysis.ipynb) | QC, clustering, 4-way cell-type annotation, DEA, GSEA | [📄 Report](reports/01_scrna_analysis_report.html) |
-| 02 | [`02_target_prioritisation.ipynb`](notebooks/02_target_prioritisation.ipynb) | PPI network, hub gene ranking, drug–gene interactions | [📄 Report](reports/02_target_prioritisation_report.html) |
-| 03 | [`03_gnn_drug_ranking.ipynb`](notebooks/03_gnn_drug_ranking.ipynb) | GNN training (GCN / GAT / GraphSAGE), drug ranking, interaction network | [📄 Report](reports/03_gnn_drug_ranking_report.html) |
+| 01 | [`01_scrna_analysis.ipynb`](notebooks/01_scrna_analysis.ipynb) | QC, clustering, 4-way cell-type annotation, DEA, GSEA | [📄 Report](results/reports/01_scrna_analysis_report.html) |
+| 02 | [`02_target_prioritisation.ipynb`](notebooks/02_target_prioritisation.ipynb) | PPI network, hub gene ranking, drug–gene interactions | [📄 Report](results/reports/02_target_prioritisation_report.html) |
+| 03 | [`03_gnn_drug_ranking.ipynb`](notebooks/03_gnn_drug_ranking.ipynb) | GNN training (GCN / GAT / GraphSAGE), drug ranking, interaction network | [📄 Report](results/reports/03_gnn_drug_ranking_report.html) |
 
 ---
 
