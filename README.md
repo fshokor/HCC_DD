@@ -1,34 +1,8 @@
-# HCC Drug Discovery Pipeline
+# Single-cell RNA-seq Analysis of Hepatocellular Carcinoma (HCC)
 ---
+This project reproduces and explores key concepts from a recent study on integrating single-cell RNA sequencing (scRNA-seq) with computational approaches to better understand hepatocellular carcinoma (HCC). The analysis focuses on dissecting tumor heterogeneity, characterizing the tumor microenvironment, and identifying potential therapeutic targets.
 
-## Overview
-
-Hepatocellular carcinoma (HCC) is the most common primary liver cancer,
-accounting for 75–85% of all liver cancers worldwide. It is typically diagnosed
-at an advanced stage, carries a poor prognosis, and rapidly develops resistance
-to conventional therapies. A key challenge is that HCC is highly heterogeneous
-at the cellular and molecular level — and standard bulk RNA-sequencing averages
-over this diversity, masking critical tumour-immune interactions.
-
-This pipeline addresses that challenge by combining **single-cell RNA sequencing
-(scRNA-seq)** with **graph neural network (GNN)-based drug discovery** to
-systematically:
-
-1. **Map the HCC tumour microenvironment** at single-cell resolution — identifying
-   distinct cell populations (hepatocytes, macrophages, T cells, fibroblasts,
-   endothelial cells) and their transcriptional states in tumour vs. normal-adjacent
-   tissue.
-2. **Identify prognostic biomarkers** through differential expression analysis and
-   survival correlation — flagging genes such as *APOE* and *ALB* (protective) and
-   *XIST* and *FTL* (risk-associated).
-3. **Prioritise therapeutic targets** via protein–protein interaction network
-   analysis and survival filtering of hub genes.
-4. **Rank drug repurposing candidates** using a GNN trained on a bipartite
-   drug–gene interaction graph, producing a scored list of approved compounds
-   with predicted therapeutic relevance to HCC.
-
-Each step generates a **self-contained HTML report** that biology experts can
-read directly — no coding knowledge required.
+HCC is a highly heterogeneous and aggressive cancer, where bulk RNA-seq fails to capture the complexity of cellular populations. Using single-cell analysis, this project aims to provide a high-resolution view of tumor biology and reproduce core analytical steps inspired by the reference study .
 
 ---
 
@@ -141,29 +115,8 @@ making it independently testable and reusable.
 
 ---
 
-
-## Original contributions
-
-This repository adds the following beyond the Wang et al. (2025) paper:
-
-- **Multi-source cell-type annotation.** Four evidence sources (CellTypist,
-  ScType with liver-specific markers, SingleR/HPCA, and curated marker scoring)
-  combined via majority vote per cluster — more robust than any single method.
-- **Modular architecture.** Each step is separated into a `*_functions.py` script
-  imported by a thin notebook. All logic is independently testable.
-- **Automated HTML reports.** Running the final cell of any notebook produces a
-  complete, self-contained HTML summary for biology stakeholders.
-- **Three GNN architectures compared.** GCN, GAT, and GraphSAGE are all trained
-  and evaluated; the best model (by R²) is used for ranking.
-- **Drug–gene network visualisation.** A bipartite network plot shows the
-  structural relationships between top-ranked drugs and their target hub genes.
-- **Per-panel figure saving.** The DGI dashboard saves each panel individually
-  in addition to the combined figure, for use in presentations and reports.
-- **Google Colab compatibility.** Notebook 03 auto-detects the Colab environment
-  and installs the correct PyG wheels for GPU-accelerated training.
-- **Pipeline test script.** `run_pipeline_test.py` validates the full scRNA-seq
-  pipeline in a Python-only mode (no R required) for CI and environment checks.
-
+## References
+Wang et al. (2025) — *Integrating single-cell RNA sequencing and artificial intelligence for multitargeted drug design for combating resistance in liver cancer.* npj Precision Oncology 9:309. [doi:10.1038/s41698-025-00952-3](https://doi.org/10.1038/s41698-025-00952-3)
 
 ---
 
