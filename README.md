@@ -4,6 +4,7 @@ This project reproduces and explores key concepts from a recent study on integra
 
 HCC is a highly heterogeneous and aggressive cancer, where bulk RNA-seq fails to capture the complexity of cellular populations. Using single-cell analysis, this project aims to provide a high-resolution view of tumor biology and reproduce core analytical steps inspired by the reference study .
 
+
 ---
 
 ## Pipeline
