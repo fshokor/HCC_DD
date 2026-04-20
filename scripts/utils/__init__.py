@@ -67,6 +67,7 @@ from .dgi_functions import (
     build_gnn_edge_list,
     plot_dgi_dashboard,
 )
+
 from .gnn_functions import (
     param_count,
     build_graph,
@@ -118,6 +119,7 @@ __all__ = [
     "prepare_ranked_list", "run_gsea_r", "print_gsea_summary", 
     "build_ppi_graph", "compute_hub_scores", "build_gnn_graph", "edge_tensors",
     "run_wilcoxon", "plot_volcano", "export_dea",
+    "plot_dgi_dashboard",
     "safe_request", "query_dgidb", "query_chembl", "query_opentargets",
     "get_curated_fallback",
     "generate_scrna_report", "generate_target_report", "generate_gnn_report",

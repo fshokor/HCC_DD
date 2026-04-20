@@ -572,7 +572,7 @@ def generate_target_report(
   </table>
   <p><b>{n_dgi:,}</b> drug-gene interactions found across {len(apis_ok)} active source(s).
   Table below shows the top 20 by composite score.</p>
-  {_img_tag(figs["dgi_bar"], "Drug-gene interaction counts per hub gene")}
+  {_img_tag(figs["dgi_bar"], "Drug-gene interaction summary — counts by interaction type and approval status")}
   {dgi_display.to_html(index=False, border=0, classes="", float_format=lambda x: f"{x:.4f}")}
 </div></div>
 
@@ -601,27 +601,47 @@ def generate_gnn_report(
     best    = all_results[best_name]
     metrics = best.get("test", best.get("metrics", {}))
 
+    # ── Figures — filenames match what gnn_functions.py actually saves ────────
     figs = {
-        "loss"    : _png_to_b64(figures_dir / "gnn_training_loss.png"),
-        "roc"     : _png_to_b64(figures_dir / "gnn_roc_curve.png"),
-        "network" : _png_to_b64(figures_dir / "drug_gene_network.png"),
-        "ranking" : _png_to_b64(figures_dir / "drug_ranking_bar.png"),
+        "training"   : _png_to_b64(figures_dir / "gnn_training_curves.png"),
+        "comparison" : _png_to_b64(figures_dir / "gnn_model_comparison.png"),
+        "scatter"    : _png_to_b64(figures_dir / "gnn_predicted_vs_actual.png"),
+        "ranking"    : _png_to_b64(figures_dir / "gnn_drug_ranking.png"),
+        "network"    : _png_to_b64(figures_dir / "drug_gene_network.png"),
     }
 
     def _fmt(v):
         return f"{v:.3f}" if isinstance(v, (int, float)) else str(v)
 
+    # ── Model comparison table rows ───────────────────────────────────────────
     rows = ""
     for name, res in all_results.items():
-        m = res.get("test", res.get("metrics", {}))
+        m    = res.get("test", res.get("metrics", {}))
         star = " ★" if name == best_name else ""
         rows += (f"<tr><td><b>{name}{star}</b></td>"
-                 f"<td>{_fmt(m.get('r2', m.get('auc', '-')))}</td>"
-                 f"<td>{_fmt(m.get('mse', m.get('f1', '-')))}</td>"
-                 f"<td>{_fmt(m.get('mae', m.get('accuracy', '-')))}</td></tr>")
+                 f"<td>{_fmt(m.get('r2', '-'))}</td>"
+                 f"<td>{_fmt(m.get('mse', '-'))}</td>"
+                 f"<td>{_fmt(m.get('mae', '-'))}</td></tr>")
 
-    top_drugs = (ranking.head(20).to_html(border=0, classes="")
-                 if ranking is not None else "<p class='fig-missing'>No ranking available</p>")
+    # ── Ranking table — drop one-hot / internal GNN feature columns ──────────
+    _rank_display_cols = [c for c in
+        ["rank", "drug", "gene", "gnn_score", "original_score", "score_delta",
+         "approved", "clinical_phase", "interaction_type", "source"]
+        if ranking is not None and c in ranking.columns]
+
+    top_drugs_html = (
+        ranking[_rank_display_cols].head(20).to_html(
+            index=False, border=0, classes="",
+            float_format=lambda x: f"{x:.4f}")
+        if ranking is not None
+        else "<p class='fig-missing'>No ranking available</p>"
+    )
+
+    # ── Approved count in top 20 ──────────────────────────────────────────────
+    n_approved_top20 = (
+        int(ranking.head(20)["approved"].sum())
+        if ranking is not None and "approved" in ranking.columns else "-"
+    )
 
     html = f"""<!DOCTYPE html>
 <html lang="en">
@@ -634,55 +654,79 @@ def generate_gnn_report(
 <div class="meta"><b>Dataset:</b> GEO GSE166635 &nbsp;|&nbsp;
 <b>Generated:</b> {_now()} &nbsp;|&nbsp; <b>Notebook:</b> 03_gnn_drug_ranking.ipynb</div>
 
+<div class="summary">
+  <strong>What this report covers:</strong> A Graph Neural Network (GNN) pipeline that
+  learns drug–gene interaction scores from the prioritised hub gene network built in
+  notebook 02. Three GNN architectures are trained and compared (GCN, GAT, GraphSAGE)
+  on a bipartite graph of {len(gene_set)} target genes and {len(drug_set):,} drug
+  candidates connected by {len(edges_df):,} known interactions. The best-performing
+  model re-scores every drug–gene pair and produces a final ranked list of repurposing
+  candidates. The GNN score refines the composite score from P3 by incorporating
+  structural information from the interaction graph — drugs that are well-connected to
+  highly-scored hub genes receive a higher ranking even if their direct interaction
+  evidence is sparse.
+</div>
+
 <div class="section">
-<h2>Graph Construction</h2>
+<h2>1 · Graph Construction</h2>
 <div class="box">
   <div class="grid">
     {_stat(str(len(gene_set)), "target genes (nodes)")}
-    {_stat(str(len(drug_set)), "drug candidates (nodes)")}
-    {_stat(str(len(edges_df)), "edges (known interactions)")}
+    {_stat(f"{len(drug_set):,}", "drug candidates (nodes)")}
+    {_stat(f"{len(edges_df):,}", "edges (known interactions)")}
     {_stat(str(feat_dim), "input feature dimensions")}
   </div>
 </div></div>
 
 <div class="section">
-<h2>Model Configuration</h2>
+<h2>2 · Model Configuration</h2>
 <div class="box">
   <table><tr><th>Hyperparameter</th><th>Value</th></tr>
-  {_param_row("Hidden dimension",     str(hidden_dim))}
-  {_param_row("Embedding dimension",  str(embed_dim))}
-  {_param_row("Dropout rate",         str(dropout))}
-  {_param_row("Learning rate",        str(lr))}
-  {_param_row("Weight decay",         str(weight_decay))}
-  {_param_row("Max epochs",           str(n_epochs))}
-  {_param_row("Early stopping patience", str(patience))}
+  {_param_row("Hidden dimension",          str(hidden_dim))}
+  {_param_row("Embedding dimension",       str(embed_dim))}
+  {_param_row("Dropout rate",              str(dropout))}
+  {_param_row("Learning rate",             str(lr))}
+  {_param_row("Weight decay",              str(weight_decay))}
+  {_param_row("Max epochs",                str(n_epochs))}
+  {_param_row("Early stopping patience",   str(patience))}
   </table>
 </div></div>
 
 <div class="section">
-<h2>Model Comparison</h2>
+<h2>3 · Model Comparison</h2>
 <div class="box">
   <table><tr><th>Model</th><th>R²</th><th>MSE</th><th>MAE</th></tr>
   {rows}
   </table>
-  <p class="good"><b>Best model: {best_name}</b> — R² {_fmt(metrics.get('r2', metrics.get('auc', '-')))},
-  MSE {_fmt(metrics.get('mse', metrics.get('f1', '-')))}</p>
-  <div class="two-col">
-    {_img_tag(figs["loss"], "Training / validation loss over epochs")}
-    {_img_tag(figs["roc"],  "ROC curve — best model")}
-  </div>
+  <p class="good"><b>Best model: {best_name}</b> — R² {_fmt(metrics.get('r2', '-'))},
+  MSE {_fmt(metrics.get('mse', '-'))},
+  MAE {_fmt(metrics.get('mae', '-'))}</p>
+  <h3>Training loss curves</h3>
+  {_img_tag(figs["training"], "Training and validation MSE loss per epoch for all three models. Highlighted panel = best model.")}
+  <h3>Metric comparison</h3>
+  {_img_tag(figs["comparison"], "R², MSE, and MAE grouped bar chart across all models on the held-out test set.")}
+  <h3>Predicted vs. actual scores</h3>
+  {_img_tag(figs["scatter"], "Scatter plot of GNN-predicted vs. true composite scores on the test set. Dashed line = perfect prediction.")}
 </div></div>
 
 <div class="section">
-<h2>Drug Ranking</h2>
+<h2>4 · Drug Ranking</h2>
 <div class="box">
-  <p>Drugs are ranked by aggregated GNN-predicted interaction score with all
-  target genes. Higher scores = stronger predicted therapeutic relevance.</p>
-  <p><b>Note:</b> ★ Approved drugs and Phase 3 candidates in the top 25
-  are highest-priority repurposing candidates.</p>
-  {_img_tag(figs["ranking"], "Top 20 drugs by GNN score")}
-  {top_drugs}
-  {_img_tag(figs["network"], "Drug-gene interaction network (GNN-predicted)")}
+  <p>Drugs are ranked by their GNN-predicted interaction score with the target genes.
+  A higher score indicates stronger predicted therapeutic relevance based on the graph
+  structure. The <b>score delta</b> (GNN score − original composite score) highlights
+  drugs the GNN promotes or demotes relative to the rule-based ranking.</p>
+  <div class="grid">
+    {_stat(str(n_approved_top20), "approved drugs in top 20")}
+    {_stat(str(ranking["drug"].nunique()) if ranking is not None else "-", "unique drugs ranked")}
+    {_stat(str(ranking["gene"].nunique()) if ranking is not None else "-", "target genes covered")}
+  </div>
+  <br>
+  {_img_tag(figs["ranking"], f"Top 25 drug candidates ranked by {best_name} GNN score. ★ = approved. | = original composite score. Colour = clinical phase.")}
+  <h3>Drug–gene interaction network</h3>
+  {_img_tag(figs["network"], f"Bipartite network of top 20 GNN-predicted drug–gene pairs. Gene size = number of top drug connections. Drug colour = clinical phase. Gold border = FDA approved. Edge width & opacity = GNN score.")}
+  <h3>Top 20 ranked drug–gene pairs</h3>
+  {top_drugs_html}
 </div></div>
 
 </body></html>"""

@@ -12,11 +12,17 @@ build_gnn_edge_list — add GNN feature columns and export
 plot_dgi_dashboard  — 5-panel summary figure
 """
 
-import numpy as np
-import pandas as pd
+from __future__ import annotations
+
+import io
+from pathlib import Path
+
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import matplotlib.ticker as mticker
+import matplotlib.patches as mpatches
+import numpy as np
+import pandas as pd
 
 # Colours per source (used in dashboard)
 SRC_COL = {
@@ -293,248 +299,281 @@ def build_gnn_edge_list(dgi_df, hub_score_map, surv_genes, tables_dir):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+_TYPE_COLS = [
+    "#534AB7","#1D9E75","#D85A30","#BA7517","#888780","#B5D4F4",
+    "#E07B54","#2E86AB","#A23B72","#F18F01","#C73E1D","#3B1F2B",
+]
+ 
+ 
+def _as_path(p):
+    return Path(p)
+def _save_panel(ax, figures_dir: Path, filename: str, dpi: int = 200):
+    """Save a single axes as an individual PNG via tight bbox extraction."""
+    fig      = ax.get_figure()
+    renderer = fig.canvas.get_renderer()
+    extent   = ax.get_tightbbox(renderer)
+    if extent is None:
+        return
+    bbox_in = extent.transformed(fig.dpi_scale_trans.inverted())
+    # Use a very small pad (1.02) to avoid picking up content from
+    # adjacent axes while still capturing axis labels and titles
+    fig.savefig(figures_dir / filename, dpi=dpi,
+                bbox_inches=bbox_in.expanded(1.02, 1.02))
+ 
+ 
 def plot_dgi_dashboard(dgi_df: pd.DataFrame, figures_dir,
                        top_genes: int = 30,
-                       top_heatmap_drugs: int = 20):
+                       top_heatmap_drugs: int = 20,
+                       max_heatmap_genes: int = 12):
     """
-    5-panel summary dashboard for drug-gene interaction results.
+    5-panel summary dashboard.  Saves combined + 5 individual panels.
  
-    Parameters
-    ----------
-    dgi_df : pd.DataFrame
-        Output of build_dgi_dataframe().
-    figures_dir : Path
-    top_genes : int
-        Maximum number of genes shown in Panel A (default 30).
-    top_heatmap_drugs : int
-        Maximum number of drugs shown in Panel E heatmap (default 20).
- 
-    Returns
-    -------
-    fig : matplotlib.figure.Figure
+    clinical_phase 0=Preclinical, 1=Phase1, 2=Phase2, 3=Phase3, 4=Approved.
     """
-    # figures_dir = _as_path(figures_dir)
+    figures_dir = _as_path(figures_dir)
  
-    # ── Pre-compute once ──────────────────────────────────────────────────────
-    # Gene interaction counts (used for A and to limit scope)
+    # ── Pre-compute gene counts ───────────────────────────────────────────────
     gc_full = dgi_df.groupby(["gene", "source"]).size().unstack(fill_value=0)
     gc_full["_total"] = gc_full.sum(axis=1)
     gc_full = gc_full.sort_values("_total", ascending=False)
- 
-    # Limit Panel A to top_genes
-    top_gene_list = gc_full.head(top_genes).index.tolist()
-    gc = gc_full.loc[top_gene_list].drop(columns="_total")
-    # Sort ascending so longest bar is at the top of a horizontal chart
+    gc = gc_full.head(top_genes).drop(columns="_total")
     gc = gc.loc[gc.sum(axis=1).sort_values(ascending=True).index]
- 
     n_genes = len(gc)
  
-    # ── Figure layout ─────────────────────────────────────────────────────────
-    # Panel A height scales with number of genes (min 4 in, max 10 in)
-    panel_a_height = max(4.0, min(10.0, n_genes * 0.28))
-    fig_height     = panel_a_height + 5.5   # top row + bottom row
- 
-    fig = plt.figure(figsize=(18, fig_height), facecolor="white")
+    # ── Layout ────────────────────────────────────────────────────────────────
+    panel_a_height = max(4.5, min(11.0, n_genes * 0.30))
+    # Extra height for bottom row to give room for Panel B legend below donut
+    fig = plt.figure(figsize=(18, panel_a_height + 7.0), facecolor="white")
     gs  = gridspec.GridSpec(
         2, 3, figure=fig,
-        height_ratios=[panel_a_height, 5.0],
-        hspace=0.55, wspace=0.40,
+        height_ratios=[panel_a_height, 7.0],
+        hspace=0.65, wspace=0.45,
     )
  
-    # ── Panel A: interactions per gene (TOP N only) ───────────────────────────
+    # ══════════════════════════════════════════════════════════════════════════
+    # Panel A — interactions per gene
+    # ══════════════════════════════════════════════════════════════════════════
     ax1 = fig.add_subplot(gs[0, :2])
- 
     bot = np.zeros(n_genes)
     for src in list(SRC_COL):
         if src in gc.columns:
             v = gc[src].values
-            ax1.barh(gc.index, v, left=bot,
-                     color=SRC_COL[src], label=src,
-                     alpha=0.88, height=0.72)
+            ax1.barh(gc.index, v, left=bot, color=SRC_COL[src],
+                     label=src, alpha=0.88, height=0.72)
             bot += v
- 
-    # Annotate total count at the end of each bar
     totals = gc.sum(axis=1)
-    for i, (gene, total) in enumerate(totals.items()):
-        ax1.text(total + totals.max() * 0.01, i, f"{int(total):,}",
+    for i, (_, tot) in enumerate(totals.items()):
+        ax1.text(tot + totals.max() * 0.01, i, f"{int(tot):,}",
                  va="center", fontsize=7.5, color="#333")
- 
     ax1.set_xlabel("Number of drug interactions", fontsize=10)
     ax1.set_title(
         f"A  Interactions per gene  (top {top_genes} of {gc_full.shape[0]})",
-        fontsize=11, fontweight="bold", loc="left",
-    )
+        fontsize=11, fontweight="bold", loc="left")
     ax1.tick_params(axis="y", labelsize=8)
     ax1.spines[["top", "right"]].set_visible(False)
     ax1.legend(loc="lower right", fontsize=9, framealpha=0.85)
     ax1.margins(y=0.01)
  
-    # ── Panel B: interaction type donut ───────────────────────────────────────
+    # ══════════════════════════════════════════════════════════════════════════
+    # Panel B — interaction type donut
+    # FIX: legend placed BELOW the donut (not beside it touching Panel A)
+    # ══════════════════════════════════════════════════════════════════════════
     ax2 = fig.add_subplot(gs[0, 2])
  
-    tc       = dgi_df["interaction_type"].str.lower().fillna("unknown").value_counts()
-    cols6    = ["#534AB7", "#1D9E75", "#D85A30", "#BA7517", "#888780", "#B5D4F4"]
-    pct      = tc / tc.sum() * 100
-    # Suppress labels for tiny slices — they cause overlap
-    labels   = [lbl if pct[lbl] >= 4.0 else "" for lbl in tc.index]
+    tc_raw  = dgi_df["interaction_type"].str.lower().fillna("unknown").value_counts()
+    pct_raw = tc_raw / tc_raw.sum() * 100
+    keep    = pct_raw >= 3.0
+    tc_kept = tc_raw[keep].copy()
+    other   = tc_raw[~keep].sum()
+    if other > 0:
+        tc_kept["other"] = other
+    n_t   = len(tc_kept)
+    tcols = _TYPE_COLS[:n_t]
+    pct_k = tc_kept / tc_kept.sum() * 100
  
-    wedges, texts, autotexts = ax2.pie(
-        tc.values,
-        labels=labels,
-        colors=cols6[:len(tc)],
-        autopct=lambda p: f"{p:.0f}%" if p >= 4.0 else "",
+    ax2.pie(
+        tc_kept.values,
+        labels=None,                    # all labels go in the legend below
+        colors=tcols,
+        autopct=lambda p: f"{p:.0f}%" if p >= 6.0 else "",
         pctdistance=0.72,
-        labeldistance=1.12,
         startangle=90,
         wedgeprops={"width": 0.55, "edgecolor": "white", "linewidth": 1.5},
-        textprops={"fontsize": 8},
+        textprops={"fontsize": 8, "fontweight": "bold"},
     )
-    for at in autotexts:
-        at.set_fontsize(8)
-        at.set_fontweight("bold")
  
-    # Add a legend for small slices that lost their label
-    unlabelled = [tc.index[i] for i, lbl in enumerate(labels) if lbl == ""]
-    if unlabelled:
-        legend_patches = [
-            plt.matplotlib.patches.Patch(
-                color=cols6[list(tc.index).index(u) % len(cols6)], label=u
-            )
-            for u in unlabelled
-        ]
-        ax2.legend(handles=legend_patches, loc="lower left",
-                   fontsize=7, framealpha=0.8)
- 
+    # Legend BELOW the donut — bbox_to_anchor y < 0 puts it under the axes
+    legend_handles = [
+        mpatches.Patch(color=tcols[i],
+                       label=f"{lbl}  ({pct_k.iloc[i]:.0f}%)")
+        for i, lbl in enumerate(tc_kept.index)
+    ]
+    ax2.legend(
+        handles=legend_handles,
+        loc="upper center",
+        bbox_to_anchor=(0.50, -0.05),   # centred, below the axes
+        ncol=2,                          # two columns so it doesn't get too tall
+        fontsize=8, framealpha=0.9,
+        title="Interaction type", title_fontsize=8.5,
+        borderpad=0.8, handlelength=1.2,
+    )
     ax2.set_title("B  Interaction types",
                   fontsize=11, fontweight="bold", loc="left")
  
-    # ── Panel C: approval by source ───────────────────────────────────────────
+    # ══════════════════════════════════════════════════════════════════════════
+    # Panel C — stacked 100% horizontal bars
+    # FIX: legend placed ABOVE the bars (outside the data area)
+    # ══════════════════════════════════════════════════════════════════════════
     ax3 = fig.add_subplot(gs[1, 0])
  
-    appr = (dgi_df.groupby(["source", "approved"])
-            .size().unstack(fill_value=0)
+    appr = (dgi_df.groupby(["source", "approved"]).size().unstack(fill_value=0)
             .rename(columns={True: "Approved", False: "Not approved",
-                              1: "Approved", 0: "Not approved"}))
-    # Ensure both columns exist
+                              1:   "Approved", 0:    "Not approved"}))
     for col in ["Approved", "Not approved"]:
         if col not in appr.columns:
             appr[col] = 0
+    appr     = appr[appr.sum(axis=1) > 0].copy()
+    tot_src  = appr.sum(axis=1)
+    pct_a    = appr["Approved"]     / tot_src * 100
+    pct_na   = appr["Not approved"] / tot_src * 100
+    y_pos    = np.arange(len(appr))
+    bh       = 0.45
  
-    # Only show sources that actually have data
-    appr = appr[appr.sum(axis=1) > 0]
+    bars_a  = ax3.barh(y_pos, pct_a.values, height=bh,
+                       color="#1D9E75", alpha=0.88, label="Approved")
+    bars_na = ax3.barh(y_pos, pct_na.values, height=bh, left=pct_a.values,
+                       color="#D3D1C7", alpha=0.88, label="Not approved")
  
-    x, w = np.arange(len(appr)), 0.35
-    ax3.bar(x - w/2, appr["Approved"].values,
-            width=w, color="#1D9E75", alpha=0.85, label="Approved")
-    ax3.bar(x + w/2, appr["Not approved"].values,
-            width=w, color="#D3D1C7", alpha=0.85, label="Not approved")
+    # Segment labels
+    for i in range(len(appr)):
+        pa, pn = pct_a.iloc[i], pct_na.iloc[i]
+        if pa > 6:
+            ax3.text(pa / 2, i, f"{pa:.0f}%",
+                     ha="center", va="center", fontsize=8,
+                     color="white", fontweight="bold")
+        if pn > 6:
+            ax3.text(pa + pn / 2, i, f"{pn:.0f}%",
+                     ha="center", va="center", fontsize=8,
+                     color="#444", fontweight="bold")
+        # Total count to the right of the 100% mark
+        ax3.text(103, i, f"n={int(tot_src.iloc[i]):,}",
+                 va="center", fontsize=7.5, color="#333")
  
-    # Annotate % approved above the "Approved" bar
-    for xi, (src, row) in zip(x, appr.iterrows()):
-        total = row["Approved"] + row["Not approved"]
-        if total > 0:
-            pct_appr = row["Approved"] / total * 100
-            ax3.text(xi - w/2, row["Approved"] + appr["Approved"].max() * 0.02,
-                     f"{pct_appr:.0f}%", ha="center", va="bottom",
-                     fontsize=8, color="#1D9E75", fontweight="bold")
- 
-    ax3.set_xticks(x)
-    ax3.set_xticklabels(appr.index, fontsize=9)
-    ax3.set_ylabel("Count", fontsize=9)
+    ax3.set_yticks(y_pos)
+    ax3.set_yticklabels(appr.index, fontsize=9)
+    ax3.set_xlabel("Percentage (%)", fontsize=9)
+    ax3.set_xlim(0, 120)
+    ax3.axvline(100, color="#ccc", lw=0.7, ls="--")
     ax3.set_title("C  Approval by source",
                   fontsize=11, fontweight="bold", loc="left")
     ax3.spines[["top", "right"]].set_visible(False)
-    ax3.legend(fontsize=8, framealpha=0.85)
  
-    # ── Panel D: clinical phase distribution ──────────────────────────────────
+    # Legend ABOVE the bars — completely outside the data area
+    ax3.legend(
+        fontsize=8, framealpha=0.90,
+        loc="lower left",
+        bbox_to_anchor=(0.0, 1.02),     # above the axes
+        ncol=2, borderpad=0.7,
+    )
+ 
+    # ══════════════════════════════════════════════════════════════════════════
+    # Panel D — clinical phase (log scale)
+    # FIX: phase 4 labelled as "Approved\n(phase 4)" so encoding is clear
+    # ══════════════════════════════════════════════════════════════════════════
     ax4 = fig.add_subplot(gs[1, 1])
  
-    pm = {0: "Preclinical", 1: "Phase 1", 2: "Phase 2",
-          3: "Phase 3",     4: "Approved"}
+    pm = {
+        0: "Preclinical\n(phase 0)",
+        1: "Phase 1",
+        2: "Phase 2",
+        3: "Phase 3",
+        4: "Approved\n(phase 4)",
+    }
     po = list(pm.values())
-    phase_series = dgi_df["clinical_phase"].map(pm)
-    pv = [phase_series.value_counts().get(p, 0) for p in po]
-    pc = [PHASE_COL[k] for k in range(5)]
- 
-    bars = ax4.bar(po, pv, color=pc, alpha=0.88, edgecolor="white", zorder=3)
- 
-    # Annotate bar heights; use log scale so small clinical-phase bars are visible
-    for b, v in zip(bars, pv):
-        if v > 0:
-            ax4.text(b.get_x() + b.get_width() / 2,
-                     v * 1.08,              # slightly above bar in log space
-                     f"{v:,}",
-                     ha="center", va="bottom", fontsize=9, fontweight="bold")
- 
-    # Dashed separator after "Preclinical" to signal it's a different category
-    ax4.axvline(x=0.5, color="#aaa", linewidth=1.0, linestyle="--", zorder=2)
+    pv = [dgi_df["clinical_phase"].map(pm).value_counts().get(p, 0) for p in po]
+    bars = ax4.bar(po, pv, color=[PHASE_COL[k] for k in range(5)],
+                   alpha=0.88, edgecolor="white", zorder=3)
  
     ax4.set_yscale("symlog", linthresh=10)
-    ax4.yaxis.set_major_formatter(mticker.FuncFormatter(
-        lambda val, _: f"{int(val):,}" if val >= 1 else "0"
-    ))
+    ax4.yaxis.set_major_formatter(
+        mticker.FuncFormatter(lambda v, _: f"{int(v):,}" if v >= 1 else "0"))
+ 
+    fig.canvas.draw()
+    y_top = ax4.get_ylim()[1]
+    for b, v in zip(bars, pv):
+        if v > 0:
+            y_ann = min(v * 1.12, y_top * 0.88)
+            ax4.text(b.get_x() + b.get_width() / 2, y_ann, f"{v:,}",
+                     ha="center", va="bottom", fontsize=9, fontweight="bold")
+ 
+    ax4.axvline(0.5, color="#aaa", lw=1.0, ls="--", zorder=2)
     ax4.set_ylabel("Count (log scale)", fontsize=9)
     ax4.set_title("D  Clinical phase",
                   fontsize=11, fontweight="bold", loc="left")
-    ax4.tick_params(axis="x", labelsize=8, rotation=15)
+    # Two-line tick labels need slightly more space — reduce font
+    ax4.tick_params(axis="x", labelsize=7.5, rotation=0)
     ax4.spines[["top", "right"]].set_visible(False)
-    ax4.grid(axis="y", linestyle=":", alpha=0.4, zorder=0)
+    ax4.grid(axis="y", ls=":", alpha=0.4, zorder=0)
  
-    # ── Panel E: top drug-gene score heatmap ──────────────────────────────────
+    # ══════════════════════════════════════════════════════════════════════════
+    # Panel E — score heatmap
+    # ══════════════════════════════════════════════════════════════════════════
     ax5 = fig.add_subplot(gs[1, 2])
  
-    # Strategy: take drugs with the highest composite_score that interact
-    # with ≥ 2 genes. If fewer than top_heatmap_drugs qualify, fill up
-    # with the best single-gene drugs.
-    drug_gene_counts = dgi_df.groupby("drug")["gene"].nunique()
-    multi_gene_drugs = drug_gene_counts[drug_gene_counts >= 2].index
-    top_multi = (dgi_df[dgi_df["drug"].isin(multi_gene_drugs)]
-                 .drop_duplicates("drug")
-                 .nlargest(top_heatmap_drugs, "composite_score")["drug"]
-                 .tolist())
- 
-    if len(top_multi) < top_heatmap_drugs:
-        # Pad with best single-gene drugs not already included
-        remaining = (dgi_df[~dgi_df["drug"].isin(top_multi)]
-                     .drop_duplicates("drug")
-                     .nlargest(top_heatmap_drugs - len(top_multi), "composite_score")
-                     ["drug"].tolist())
-        selected_drugs = top_multi + remaining
+    d_gc  = dgi_df.groupby("drug")["gene"].nunique()
+    multi = d_gc[d_gc >= 2].index
+    top_m = (dgi_df[dgi_df["drug"].isin(multi)].drop_duplicates("drug")
+             .nlargest(top_heatmap_drugs, "composite_score")["drug"].tolist())
+    if len(top_m) < top_heatmap_drugs:
+        rem = (dgi_df[~dgi_df["drug"].isin(top_m)].drop_duplicates("drug")
+               .nlargest(top_heatmap_drugs - len(top_m), "composite_score")
+               ["drug"].tolist())
+        sel = top_m + rem
     else:
-        selected_drugs = top_multi
+        sel = top_m
  
-    heat_df = (dgi_df[dgi_df["drug"].isin(selected_drugs)]
-               .pivot_table(index="drug", columns="gene",
-                            values="composite_score", aggfunc="max",
-                            fill_value=0))
+    hdf = (dgi_df[dgi_df["drug"].isin(sel)]
+           .pivot_table(index="drug", columns="gene",
+                        values="composite_score", aggfunc="max", fill_value=0))
+    hdf = hdf.loc[:, (hdf > 0).any()]
+    hdf = hdf.loc[hdf.max(axis=1).sort_values(ascending=False).index]
+    if hdf.shape[1] > max_heatmap_genes:
+        col_fill = (hdf > 0).sum().sort_values(ascending=False)
+        hdf = hdf[col_fill.head(max_heatmap_genes).index]
  
-    # Keep only genes that appear at least once in heatmap
-    heat_df = heat_df.loc[:, (heat_df > 0).any()]
-    # Sort drugs by row-max score descending
-    heat_df = heat_df.loc[heat_df.max(axis=1).sort_values(ascending=False).index]
- 
-    im = ax5.imshow(heat_df.values, cmap="YlOrRd",
-                    aspect="auto", vmin=0, vmax=1)
-    ax5.set_xticks(range(len(heat_df.columns)))
-    ax5.set_xticklabels(heat_df.columns, rotation=45, ha="right", fontsize=7)
-    ax5.set_yticks(range(len(heat_df.index)))
-    ax5.set_yticklabels(heat_df.index, fontsize=7)
-    plt.colorbar(im, ax=ax5, shrink=0.8, label="Composite score")
+    im = ax5.imshow(hdf.values, cmap="YlOrRd", aspect="auto", vmin=0, vmax=1)
+    ax5.set_xticks(range(len(hdf.columns)))
+    ax5.set_xticklabels(hdf.columns, rotation=90, ha="center", fontsize=7.5)
+    ax5.set_yticks(range(len(hdf.index)))
+    ax5.set_yticklabels(hdf.index, fontsize=7.5)
+    plt.colorbar(im, ax=ax5, shrink=0.75, pad=0.02, label="Composite score")
     ax5.set_title("E  Score heatmap — top drugs",
                   fontsize=11, fontweight="bold", loc="left")
  
-    # ── Suptitle & save ───────────────────────────────────────────────────────
-    n_total_genes = gc_full.shape[0]
-    n_drugs       = dgi_df["drug"].nunique()
-    n_approved    = int(dgi_df["approved"].sum())
+    # ── Suptitle ─────────────────────────────────────────────────────────────
     fig.suptitle(
         f"Drug–Gene Interaction Analysis — HCC Hub Genes\n"
-        f"{n_total_genes} genes · {n_drugs:,} unique drugs · {n_approved:,} approved",
+        f"{gc_full.shape[0]} genes · {dgi_df['drug'].nunique():,} unique drugs "
+        f"· {int(dgi_df['approved'].sum()):,} approved",
         fontsize=13, fontweight="bold", y=1.01,
     )
  
-    out = figures_dir / "dgi_summary_dashboard.png"
-    fig.savefig(out, dpi=200, bbox_inches="tight")
+    # ── Save combined ─────────────────────────────────────────────────────────
+    combined_out = figures_dir / "dgi_summary_dashboard.png"
+    fig.savefig(combined_out, dpi=200, bbox_inches="tight")
+    print(f"Saved (combined): {combined_out}")
+ 
+    # ── Save each panel individually ──────────────────────────────────────────
+    fig.canvas.draw()
+    for ax, fname in [
+        (ax1, "dgi_panel_A_interactions.png"),
+        (ax2, "dgi_panel_B_interaction_types.png"),
+        (ax3, "dgi_panel_C_approval.png"),
+        (ax4, "dgi_panel_D_clinical_phase.png"),
+        (ax5, "dgi_panel_E_score_heatmap.png"),
+    ]:
+        _save_panel(ax, figures_dir, fname, dpi=200)
+        print(f"Saved (panel)  : {figures_dir / fname}")
+ 
     plt.show()
-    print(f"Saved: {out}")
     return fig

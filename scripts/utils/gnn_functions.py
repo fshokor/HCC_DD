@@ -25,6 +25,8 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
+import matplotlib.colors as mcolors
+import networkx as nx
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -536,4 +538,196 @@ def plot_ranking(ranking, best_name, figures_dir, top_n=25):
     plt.tight_layout()
     fig.savefig(figures_dir / "gnn_drug_ranking.png", dpi=200, bbox_inches="tight")
     plt.show()
+    return fig
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+def plot_drug_gene_network(ranking, best_name, figures_dir,
+                           top_n=20,
+                           min_gnn_score=0.0):
+    """
+    Bipartite drug–gene network visualisation using the GNN-ranked results.
+
+    Layout
+    ------
+    Genes are arranged on the left column, drugs on the right column.
+    Edge width and opacity encode the GNN-predicted interaction score.
+    Node size for genes encodes how many top-ranked drugs interact with them.
+    Drug nodes are coloured by clinical phase; gene nodes by hub score (if present).
+    Approved drugs are marked with a gold border.
+
+    Parameters
+    ----------
+    ranking : pd.DataFrame
+        Output of rank_drugs() — must contain columns:
+        drug, gene, gnn_score, approved, clinical_phase.
+        Optional: hub_score (gene attribute).
+    best_name : str
+        Name of the winning model (used in title).
+    figures_dir : Path
+    top_n : int
+        Number of top-ranked drug–gene pairs to display (default 20).
+    min_gnn_score : float
+        Only show edges with gnn_score ≥ this threshold (default 0.0).
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+    """
+    from pathlib import Path
+    figures_dir = Path(figures_dir)
+
+    # ── Select edges to display ───────────────────────────────────────────────
+    df = ranking.copy()
+    if min_gnn_score > 0:
+        df = df[df["gnn_score"] >= min_gnn_score]
+    df = df.head(top_n).reset_index(drop=True)
+
+    if df.empty:
+        print("plot_drug_gene_network: no edges to display.")
+        return None
+
+    genes = df["gene"].unique().tolist()
+    drugs = df["drug"].unique().tolist()
+
+    # ── Build networkx graph ──────────────────────────────────────────────────
+    G = nx.Graph()
+    G.add_nodes_from(genes, node_type="gene")
+    G.add_nodes_from(drugs, node_type="drug")
+    for _, row in df.iterrows():
+        G.add_edge(row["drug"], row["gene"],
+                   gnn_score=row["gnn_score"],
+                   approved=bool(row.get("approved", False)),
+                   clinical_phase=int(row.get("clinical_phase", 0)))
+
+    # ── Layout: genes left, drugs right ──────────────────────────────────────
+    n_genes = len(genes)
+    n_drugs = len(drugs)
+    pos = {}
+    # Space genes evenly on x=0
+    for i, g in enumerate(genes):
+        pos[g] = (0.0, (n_genes - 1 - i) / max(n_genes - 1, 1))
+    # Space drugs evenly on x=1
+    for i, d in enumerate(drugs):
+        pos[d] = (1.0, (n_drugs - 1 - i) / max(n_drugs - 1, 1))
+
+    # ── Node attributes ───────────────────────────────────────────────────────
+    # Gene node size ~ number of top-ranked drug connections
+    gene_degree = {g: sum(1 for _, row in df.iterrows() if row["gene"] == g)
+                   for g in genes}
+    gene_sizes  = [300 + gene_degree[g] * 120 for g in genes]
+
+    # Drug node colour ~ clinical phase
+    drug_phase_map = (df.drop_duplicates("drug")
+                        .set_index("drug")["clinical_phase"]
+                        .to_dict()
+                      if "clinical_phase" in df.columns else {})
+    drug_colors = [PHASE_COLORS.get(int(drug_phase_map.get(d, 0)), "#D3D1C7")
+                   for d in drugs]
+
+    # Approved drugs get a gold edge colour
+    drug_approved = (df.drop_duplicates("drug")
+                       .set_index("drug")["approved"]
+                       .to_dict()
+                     if "approved" in df.columns else {})
+    drug_edgecolors = ["#E6B84A" if drug_approved.get(d, False) else "#cccccc"
+                       for d in drugs]
+    drug_linewidths = [2.5 if drug_approved.get(d, False) else 0.8
+                       for d in drugs]
+
+    # ── Edge attributes ───────────────────────────────────────────────────────
+    edges     = list(G.edges(data=True))
+    scores    = np.array([e[2]["gnn_score"] for e in edges])
+    score_min, score_max = scores.min(), scores.max()
+    norm      = (scores - score_min) / (score_max - score_min + 1e-9)
+    edge_widths  = 0.5 + norm * 4.5   # 0.5 → 5.0
+    edge_alphas  = 0.25 + norm * 0.65  # 0.25 → 0.90
+
+    # ── Figure ────────────────────────────────────────────────────────────────
+    fig_h = max(8, max(n_genes, n_drugs) * 0.55)
+    fig, ax = plt.subplots(figsize=(14, fig_h), facecolor="white")
+
+    # Draw edges individually so alpha and width vary per edge
+    for (u, v, data), width, alpha in zip(edges, edge_widths, edge_alphas):
+        x0, y0 = pos[u]
+        x1, y1 = pos[v]
+        ax.plot([x0, x1], [y0, y1],
+                color="#534AB7", linewidth=width, alpha=alpha, zorder=1)
+
+    # Draw gene nodes
+    gene_xs = [pos[g][0] for g in genes]
+    gene_ys = [pos[g][1] for g in genes]
+    ax.scatter(gene_xs, gene_ys, s=gene_sizes,
+               color="#3a0ca3", edgecolors="#1a1a2e", linewidths=1.0,
+               zorder=3, label="Gene")
+
+    # Draw drug nodes
+    drug_xs = [pos[d][0] for d in drugs]
+    drug_ys = [pos[d][1] for d in drugs]
+    ax.scatter(drug_xs, drug_ys, s=280,
+               color=drug_colors, edgecolors=drug_edgecolors,
+               linewidths=drug_linewidths, zorder=3, marker="D",
+               label="Drug (◆)")
+
+    # ── Labels ────────────────────────────────────────────────────────────────
+    label_pad = 0.03
+    for g in genes:
+        ax.text(pos[g][0] - label_pad, pos[g][1], g,
+                ha="right", va="center", fontsize=8.5,
+                fontweight="bold", color="#1a1a2e")
+    for d in drugs:
+        # Append ★ for approved
+        suffix = "  ★" if drug_approved.get(d, False) else ""
+        ax.text(pos[d][0] + label_pad, pos[d][1], d + suffix,
+                ha="left", va="center", fontsize=8,
+                color="#1a1a2e")
+
+    # ── Edge score colorbar ───────────────────────────────────────────────────
+    sm = plt.cm.ScalarMappable(
+        cmap=plt.cm.Blues,
+        norm=mcolors.Normalize(vmin=score_min, vmax=score_max))
+    sm.set_array([])
+    cbar = plt.colorbar(sm, ax=ax, shrink=0.35, pad=0.01, aspect=20)
+    cbar.set_label("GNN interaction score", fontsize=9)
+
+    # ── Phase legend ──────────────────────────────────────────────────────────
+    phase_labels = {0: "Preclinical", 1: "Phase 1", 2: "Phase 2",
+                    3: "Phase 3",     4: "Approved (Phase 4)"}
+    phase_patches = [
+        mpatches.Patch(color=c, label=phase_labels[k], alpha=0.88)
+        for k, c in sorted(PHASE_COLORS.items())
+        if any(int(drug_phase_map.get(d, 0)) == k for d in drugs)
+    ]
+    approved_patch = mpatches.Patch(
+        facecolor="white", edgecolor="#E6B84A", linewidth=2.5,
+        label="FDA approved (gold border)")
+    ax.legend(handles=phase_patches + [approved_patch],
+              loc="lower center", bbox_to_anchor=(0.5, -0.08),
+              ncol=3, fontsize=8, framealpha=0.9,
+              title="Drug clinical phase", title_fontsize=8)
+
+    # ── Axes cosmetics ────────────────────────────────────────────────────────
+    ax.set_xlim(-0.30, 1.30)
+    ax.set_ylim(-0.08, 1.08)
+    ax.axis("off")
+
+    # Column headers
+    ax.text(0.0, 1.06, "Hub genes", ha="center", va="bottom",
+            fontsize=11, fontweight="bold", color="#3a0ca3",
+            transform=ax.transData)
+    ax.text(1.0, 1.06, "Drug candidates", ha="center", va="bottom",
+            fontsize=11, fontweight="bold", color="#185FA5",
+            transform=ax.transData)
+
+    ax.set_title(
+        f"Drug–Gene Interaction Network — top {top_n} pairs ({best_name})\n"
+        f"Edge width & opacity = GNN score  |  Gene size = no. of top interactions  "
+        f"|  ★ = FDA approved",
+        fontsize=10, pad=14)
+
+    plt.tight_layout()
+    out = figures_dir / "drug_gene_network.png"
+    fig.savefig(out, dpi=200, bbox_inches="tight")
+    plt.show()
+    print(f"Saved: {out}")
     return fig
