@@ -469,8 +469,8 @@ def generate_scrna_report(
 def generate_target_report(
     sig, gene_list, G, hub_df, edges_df,
     string_score, log2fc_thresh, padj_thresh,
-    # surv_df, surv_filtered, is_sim,
-    # hr_min, hr_max,
+    surv_df, surv_filtered, is_sim,
+    km_p_thresh, cox_p_thresh, hr_min, hr_max,
     dgi_df, apis_ok,
     use_dgidb, use_chembl, use_opentargets, use_curated, W,
     figures_dir, tables_dir, reports_dir,
@@ -481,17 +481,17 @@ def generate_target_report(
 
     figs = {
         "ppi"       : _png_to_b64(figures_dir / "ppi_network.png"),
-        # "km"        : _png_to_b64(figures_dir / "km_plots.png"),
-        # "cox"       : _png_to_b64(figures_dir / "cox_forest_plot.png"),
+        "km"        : _png_to_b64(figures_dir / "km_plots.png"),
+        "cox"       : _png_to_b64(figures_dir / "cox_forest_plot.png"),
         "dgi_bar"   : _png_to_b64(figures_dir / "dgi_summary_dashboard.png"),
     }
 
     n_hub    = len(hub_df)
-    # n_surv   = len(surv_filtered)
+    n_surv   = len(surv_filtered)
     n_dgi    = len(dgi_df)
 
-    # surv_note = ("⚠ Simulated survival data used (TCGA-LIHC unavailable)"
-    #              if is_sim else "✓ TCGA-LIHC survival data")
+    surv_note = ("⚠ Simulated survival data used (TCGA-LIHC unavailable)"
+                 if is_sim else "✓ TCGA-LIHC survival data")
 
     # P3 table: drop internal one-hot / GNN feature columns — show only meaningful ones
     _dgi_display_cols = [c for c in
@@ -500,12 +500,12 @@ def generate_target_report(
         if c in dgi_df.columns]
     dgi_display = dgi_df[_dgi_display_cols].head(20)
 
-    # # Survival table: drop redundant columns
-    # _surv_display_cols = [c for c in
-    #     ["gene", "HR", "HR_CI_low", "HR_CI_high", "logrank_p", "cox_p",
-    #      "log2FC", "regulation", "prognosis"]
-    #     if c in surv_filtered.columns]
-    # surv_display = surv_filtered[_surv_display_cols].head(20)
+    # Survival table: drop redundant columns
+    _surv_display_cols = [c for c in
+        ["gene", "HR", "HR_CI_low", "HR_CI_high", "logrank_p", "cox_p",
+         "log2FC", "regulation", "prognosis"]
+        if c in surv_filtered.columns]
+    surv_display = surv_filtered[_surv_display_cols].head(20)
 
     html = f"""<!DOCTYPE html>
 <html lang="en">
@@ -542,9 +542,25 @@ def generate_target_report(
   {hub_df[["gene","degree","hub_score","regulation"]].head(20).to_html(index=False, border=0, classes="")}
 </div></div>
 
+# <div class="section">
+# <h2>P2 · Survival Filter</h2>
+# <div class="box">
+#   <div class="{'warn' if is_sim else 'good'}">{surv_note}</div>
+#   <table><tr><th>Parameter</th><th>Value</th></tr>
+#   {_param_row("KM log-rank p threshold", str(km_p_thresh))}
+#   {_param_row("Cox p threshold", str(cox_p_thresh))}
+#   {_param_row("HR range filter", f"{hr_min} – {hr_max}")}
+#   {_param_row("Genes passing survival filter", str(n_surv))}
+#   </table><br>
+#   <div class="two-col">
+#     {_img_tag(figs["km"],  "Kaplan-Meier survival curves for top candidates")}
+#     {_img_tag(figs["cox"], "Cox proportional-hazards forest plot")}
+#   </div>
+#   {surv_display.to_html(index=False, border=0, classes="", float_format=lambda x: f"{x:.4f}")}
+# </div></div>
 
 <div class="section">
-<h2>P2 · Drug-Gene Interactions</h2>
+<h2>P3 · Drug-Gene Interactions</h2>
 <div class="box">
   <table><tr><th>Source</th><th>Enabled</th></tr>
   <tr><td>DGIdb</td><td>{"✓" if use_dgidb else "✗"}</td></tr>
